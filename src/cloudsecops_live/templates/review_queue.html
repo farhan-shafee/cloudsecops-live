@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block content %}
+<h2>Assigned reviewer queue</h2>
+<p>Review concerns only a bound synthetic no-action exercise. It authorizes no containment, remediation or cloud operation.</p>
+{% for item in items %}<article><a href="/cases/{{ item.case_id }}/workflow">{{ item.case_id }}</a><pre>{{ item.summary }}</pre></article>{% else %}<p>No assigned recommendations.</p>{% endfor %}
+{% if next_offset is not none %}<a href="/review-queue?offset={{ next_offset }}&amp;limit={{ limit }}">Next page</a>{% endif %}
+{% endblock %}

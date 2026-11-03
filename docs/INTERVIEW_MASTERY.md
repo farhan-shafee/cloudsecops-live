@@ -1,10 +1,14 @@
 # Interview mastery and practical assessment
 
-Status: training plan with Phase 1A-1, Phase 1A-2 and Phase 1A-3A executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; local PostgreSQL integration/recovery tests are separate from live exercises, deployment or AWS actions, which remain unperformed. Passing software tests does not establish human mastery, a complete live platform or production experience.
+Status: training plan with Phase 1A-1 through Phase 1A-3B executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; local PostgreSQL integration/recovery tests are separate from live exercises, deployment or AWS actions, which remain unperformed. Passing software tests does not establish human mastery, a complete live platform or production experience.
+
+## Phase 1A-3B practice now available
+
+The [reviewed exercise no-AI lab](labs/PHASE1A3B_INTERVIEW_LAB.md) covers integrity versus authenticity, benign inventory triage, exact version-bound review, separation of duties, restricted independent verification, transactional state machines, replay, TOCTOU, audit failures and late evidence. Explain why verified local consistency cannot establish AWS authenticity, benign intent or remediation. Practical tasks include role/assignment revocation races, wrong-window claims, failed audit and explicit reopening. The independent rubric and all human results remain NOT_RUN. This phase supplies synthetic practice for portions of C06/C07/C08/C09; it grants no live or institutional authority.
 
 ## Phase 1A-3A practice now available
 
-Use the [secure-workspace no-AI lab](labs/PHASE1A3A_INTERVIEW_LAB.md) and [actual permission model](architecture/ANALYST_WORKSPACE.md) to demonstrate authentication versus authorization, object grants, password hashing, session revocation, CSRF/XSS/SQL boundaries, TLS/cookies, direct SQL denials and atomic version-bound notes/audit. The lab includes deliberately failing tasks and an independent scoring rubric. Automated security tests do not award C07 approval/verification mastery: those authorities are not implemented. C08 practical assessment remains NOT_RUN until an assessor observes the cold exercises.
+Use the [secure-workspace no-AI lab](labs/PHASE1A3A_INTERVIEW_LAB.md) and [actual permission model](architecture/ANALYST_WORKSPACE.md) to demonstrate authentication versus authorization, object grants, password hashing, session revocation, CSRF/XSS/SQL boundaries, TLS/cookies, direct SQL denials and atomic version-bound notes/audit. The lab includes deliberately failing tasks and an independent scoring rubric. Automated security tests do not award C07 mastery: only synthetic no-action review/consistency verification is implemented, and human performance has not been assessed. C08 practical assessment remains NOT_RUN until an assessor observes the cold exercises.
 
 ## Phase 1A-2 practice now available
 
@@ -147,4 +151,4 @@ For each attempt record: capability/panel, commit and versions, source class, pr
 
 Current human assessment record: **all eleven capabilities NOT_RUN; all panels NOT_RUN; no earned mastery, live integration or remediation claim.** Phase 1A-1 automated tests are a separate software-validation record. Update human scores only after observed assessment; separate an independent operator's reproduction from two local accounts controlled by the author.
 
-An accurate eventual statement would be: “In an authorized AWS sandbox, I traced three read-only inventory calls through validated CloudTrail evidence, a deterministic rule, Wazuh, a reviewed no-action case and a separate read-only verifier.” Use it only after those receipts exist. Until then say: “I implemented and tested the offline synthetic evidence, detection, persistence and recovery foundation; live source validation, SIEM and human review remain future work.”
+An accurate eventual statement would be: "In an authorized AWS sandbox, I traced three read-only inventory calls through validated CloudTrail evidence, a deterministic rule, Wazuh, a reviewed no-action case and a separate read-only verifier." Use it only after those live receipts exist. Until then say: "I implemented and tested the offline synthetic evidence, detection, persistence, authenticated workspace and reviewed no-action consistency workflow; live AWS source validation and SIEM integration remain future work."

@@ -6,7 +6,9 @@ from cloudsecops_live.cli import main
 
 
 def test_missing_private_config_fails_without_success(capsys, tmp_path) -> None:
-    assert main(["db-status", "--config", str(tmp_path / "private-secret.json")]) == 2
+    assert (
+        main(["db-status", "--maintenance", "--config", str(tmp_path / "private-secret.json")]) == 2
+    )
     captured = capsys.readouterr()
     assert not captured.out
     assert json.loads(captured.err)["error"]["code"] == "INVALID_DATABASE_CONFIG"
@@ -27,9 +29,9 @@ def test_migrate_receipt_reports_current_schema_only_after_success(monkeypatch, 
             pass
 
     monkeypatch.setattr(durable_cli, "_database", lambda path: SuccessfulMigration())
-    assert main(["db-migrate"]) == 0
+    assert main(["db-migrate", "--maintenance"]) == 0
     result = json.loads(capsys.readouterr().out)
-    assert result["schema_version"] == 2
+    assert result["schema_version"] == 3
     assert result["status"] == "migrated"
 
     class RejectedMigration:
@@ -37,7 +39,7 @@ def test_migrate_receipt_reports_current_schema_only_after_success(monkeypatch, 
             raise EvidenceError("SCHEMA_INCOMPATIBLE")
 
     monkeypatch.setattr(durable_cli, "_database", lambda path: RejectedMigration())
-    assert main(["db-migrate"]) == 2
+    assert main(["db-migrate", "--maintenance"]) == 2
     captured = capsys.readouterr()
     assert not captured.out
     assert json.loads(captured.err)["error"]["code"] == "SCHEMA_INCOMPATIBLE"

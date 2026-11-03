@@ -6,7 +6,7 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from cloudsecops_live.cases import evidence_fingerprint
-from cloudsecops_live.database import Database
+from cloudsecops_live.database import Database, machine_audit
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.worker import _fault
 
@@ -48,13 +48,10 @@ def deliver_once(
                 "WHERE outbox_id=%s",
                 (committed["outbox_id"],),
             )
-            conn.execute(
-                "INSERT INTO csl.audit(kind,payload) VALUES ('outbox_receipt_reconciled',%s)",
-                (
-                    Jsonb(
-                        {"outbox_id": committed["outbox_id"], "delivery_class": "offline_test_only"}
-                    ),
-                ),
+            machine_audit(
+                conn,
+                "outbox_receipt_reconciled",
+                {"outbox_id": committed["outbox_id"], "delivery_class": "offline_test_only"},
             )
             # A matching sink receipt already committed; reconciling it consumes no new attempt.
             reconciled = committed["outbox_id"]
@@ -89,9 +86,8 @@ def deliver_once(
             "lease_until=clock_timestamp()+(%s * interval '1 second') WHERE outbox_id=%s",
             (token, lease_seconds, row["outbox_id"]),
         )
-        conn.execute(
-            "INSERT INTO csl.audit(kind,payload) VALUES ('outbox_attempt',%s)",
-            (Jsonb({"outbox_id": row["outbox_id"], "attempt": row["attempts"] + 1}),),
+        machine_audit(
+            conn, "outbox_attempt", {"outbox_id": row["outbox_id"], "attempt": row["attempts"] + 1}
         )
     try:
         _fault(fault, "after_outbox_claim")
@@ -137,9 +133,10 @@ def deliver_once(
             ).fetchone()
             if acknowledged is None:
                 raise EvidenceError("LOST_LEASE")
-            conn.execute(
-                "INSERT INTO csl.audit(kind,payload) VALUES ('outbox_local_ack',%s)",
-                (Jsonb({"outbox_id": row["outbox_id"], "delivery_class": "offline_test_only"}),),
+            machine_audit(
+                conn,
+                "outbox_local_ack",
+                {"outbox_id": row["outbox_id"], "delivery_class": "offline_test_only"},
             )
         _fault(fault, "after_outbox_ack")
         return {

@@ -7,6 +7,8 @@ import getpass
 import json
 import subprocess
 import sys
+from hashlib import sha256
+from importlib.resources import files
 from pathlib import Path
 from typing import Never
 
@@ -40,10 +42,14 @@ def parser() -> argparse.ArgumentParser:
         "grant-case",
         "disable-user",
         "restore-security",
+        "verifier-add",
+        "verifier-disable",
+        "pipeline-add",
+        "pipeline-disable",
     ):
         command = commands.add_parser(name)
         command.add_argument("--maintenance-config", required=True, type=Path)
-        if name in {"init", "user-add", "disable-user"}:
+        if name in {"init", "user-add", "disable-user", "verifier-add", "pipeline-add"}:
             command.add_argument("--config", required=True, type=Path)
         if name == "init":
             command.add_argument("--tls-dir", required=True, type=Path)
@@ -54,8 +60,14 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument(
                 "--role", choices=("analyst", "reviewer", "auditor"), required=True
             )
-        if name == "grant-case":
+        if name in {"grant-case", "verifier-add"}:
             command.add_argument("--case-id", required=True)
+        if name == "verifier-disable":
+            command.add_argument("--verifier-id", required=True)
+        if name == "pipeline-add":
+            command.add_argument("--kind", choices=("collector", "worker"), required=True)
+        if name == "pipeline-disable":
+            command.add_argument("--pipeline-id", required=True)
     serve = commands.add_parser("serve")
     serve.add_argument("--config", required=True, type=Path)
     return result
@@ -123,6 +135,27 @@ def main(argv: list[str] | None = None) -> int:
                     "accounts": [],
                 },
             )
+        elif options.command == "verifier-add":
+            if options.config.exists():
+                raise ValueError("verifier_config_exists")
+            checker_digest = sha256(
+                files("cloudsecops_live").joinpath("independent_verifier.py").read_bytes()
+            ).hexdigest()
+            verifier = roles.provision_verifier(db, options.case_id, checker_digest)
+            write_private_json(options.config, verifier)
+        elif options.command == "verifier-disable":
+            roles.disable_verifier(db, options.verifier_id)
+        elif options.command == "pipeline-add":
+            from cloudsecops_live.pipeline_roles import provision_pipeline
+
+            if options.config.exists():
+                raise ValueError("pipeline_config_exists")
+            identity = provision_pipeline(db, options.kind)
+            write_private_json(options.config, identity)
+        elif options.command == "pipeline-disable":
+            from cloudsecops_live.pipeline_roles import disable_pipeline
+
+            disable_pipeline(db, options.pipeline_id)
         elif options.command == "user-add":
             from cloudsecops_live.workspace_auth import hash_password
 

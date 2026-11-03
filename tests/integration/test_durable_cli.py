@@ -22,24 +22,29 @@ def test_cli_durable_pipeline_commits_then_reports_pending_and_local_delivery(db
     config = config_for(db, tmp_path)
     fixture = tmp_path / "synthetic.json.gz"
     fixture.write_bytes(archive([event("e0"), event("e20", 20), event("e40", 40)]))
-    assert main(["db-migrate", "--config", config]) == 0
+    assert main(["db-migrate", "--maintenance", "--config", config]) == 0
     capsys.readouterr()
-    assert main(["db-ingest", str(fixture), "--config", config, "--checkpoint", "cli"]) == 0
+    assert (
+        main(
+            ["db-ingest", str(fixture), "--maintenance", "--config", config, "--checkpoint", "cli"]
+        )
+        == 0
+    )
     ingested = json.loads(capsys.readouterr().out)
     assert ingested["accepted"] == 3
     assert "committed" in ingested["acknowledgment"]
-    assert main(["db-status", "--config", config]) == 0
+    assert main(["db-status", "--maintenance", "--config", config]) == 0
     assert json.loads(capsys.readouterr().out)["pending"] is True
-    assert main(["db-work", "--config", config]) == 0
+    assert main(["db-work", "--maintenance", "--config", config]) == 0
     assert json.loads(capsys.readouterr().out)["operations"][0]["status"] == "succeeded"
-    assert main(["db-cases", "--config", config]) == 0
+    assert main(["db-cases", "--maintenance", "--config", config]) == 0
     cases = json.loads(capsys.readouterr().out)["cases"]
     assert cases[0]["payload"]["evidence_event_ids"] == ["e0", "e20", "e40"]
-    assert main(["db-deliver", "--config", config]) == 0
+    assert main(["db-deliver", "--maintenance", "--config", config]) == 0
     receipt = json.loads(capsys.readouterr().out)
     assert receipt["operations"][0]["status"] == "locally_acknowledged"
     assert receipt["operations"][0]["searchable_siem_alert"] is False
-    assert main(["db-verify", "--config", config]) == 0
+    assert main(["db-verify", "--maintenance", "--config", config]) == 0
     assert json.loads(capsys.readouterr().out)["verified"] is True
 
 
@@ -55,7 +60,7 @@ def test_cli_database_failure_is_nonzero_and_does_not_expose_dsn(db, tmp_path, c
             ),
             encoding="utf-8",
         )
-        assert main(["db-status", "--config", str(path)]) == 75
+        assert main(["db-status", "--maintenance", "--config", str(path)]) == 75
     output = capsys.readouterr()
     assert output.out == ""
     assert "DATABASE_OPERATION_FAILED" in output.err
@@ -69,7 +74,7 @@ def test_cli_active_work_never_reports_completed_pipeline(db, tmp_path, capsys):
     add(db, [0, 20, 40])
     assert claim_job(db) is not None
     config = config_for(db, tmp_path)
-    assert main(["db-work", "--config", config]) == 75
+    assert main(["db-work", "--maintenance", "--config", config]) == 75
     result = json.loads(capsys.readouterr().out)
     assert result["pending"] is True
     assert result["operations"][0]["status"] == "idle"

@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block content %}
+<h2>Reviewed synthetic exercise</h2>
+<p><a href="/cases/{{ workflow.case_id }}">Machine case {{ workflow.case_id }}</a></p>
+<p>Human workflow: <strong>{{ workflow.state }}</strong>; version {{ workflow.workflow_version }}, epoch {{ workflow.epoch }}.</p>
+<p>The machine case remains an <strong>unreviewed synthetic draft</strong>. Its immutable revisions are separate from the human exercise workflow.</p>
+<p>Evidence remains <strong>synthetic and unauthenticated</strong>. Verification checks stored evidence consistency. It does not authenticate AWS, establish real exercise authorization, prove benign intent or prove absence of unobserved activity. Exercise closure is not containment or remediation. Analyst notes do not independently establish facts.</p>
+<p>Only NO_ACTION_AUTHORIZED_EXERCISE is supported. Execution targets are always empty. Reviewer accounts operated by one person simulate separation of duties.</p>
+{% if not workflow.eligible %}<p>Current evidence or workflow authority is not eligible. Old decisions cannot authorize closure.</p>{% endif %}
+{% if tokens.get('recommend') and workflow.eligible and workflow.state not in ('closed','reopen_required') %}
+<h3>Recommend no action</h3>
+<form method="post" action="/cases/{{ workflow.case_id }}/recommendations">
+<input type="hidden" name="csrf_token" value="{{ tokens.recommend }}"><input type="hidden" name="case_revision" value="{{ workflow.case_revision }}"><input type="hidden" name="fingerprint" value="{{ workflow.fingerprint }}"><input type="hidden" name="workflow_version" value="{{ workflow.workflow_version }}">
+<p><label>Analyst rationale <textarea name="rationale" required maxlength="2000"></textarea></label></p>
+<p><label>Counterevidence and benign explanations <textarea name="counterevidence" required maxlength="2000"></textarea></label></p>
+<p><label>Visibility gaps and uncertainty <textarea name="visibility_gaps" required maxlength="2000"></textarea></label></p>
+<button type="submit">Submit bound synthetic no-action recommendation</button></form>{% endif %}
+{% if tokens.get('review') and recommendation and not recommendation.get('review') and workflow.eligible %}
+<h3>Distinct reviewer decision</h3>
+<form method="post" action="/cases/{{ workflow.case_id }}/recommendations/{{ recommendation.recommendation_id }}/{{ recommendation.version }}/review">
+<input type="hidden" name="csrf_token" value="{{ tokens.review }}"><input type="hidden" name="workflow_version" value="{{ workflow.workflow_version }}"><input type="hidden" name="recommendation_hash" value="{{ recommendation.recommendation_hash }}">
+<p><label>Decision <select name="decision"><option value="approve">Approve this synthetic no-action recommendation</option><option value="reject">Reject</option></select></label></p>
+<p><label>Review reason <textarea name="reason" required maxlength="2000"></textarea></label></p><button type="submit">Record decision</button></form>{% endif %}
+{% if tokens.get('close') and recommendation and recommendation.get('review') and recommendation.review.get('decision') == 'approve' and recommendation.get('verification') and recommendation.verification.get('result') == 'verified' and workflow.eligible and workflow.state != 'closed' %}
+<h3>Close synthetic exercise</h3>
+<p>The database rechecks every binding and current authority. Only the approving reviewer may close.</p>
+<form method="post" action="/cases/{{ workflow.case_id }}/close">
+<input type="hidden" name="csrf_token" value="{{ tokens.close }}"><input type="hidden" name="workflow_version" value="{{ workflow.workflow_version }}"><input type="hidden" name="recommendation_id" value="{{ recommendation.recommendation_id }}"><input type="hidden" name="recommendation_version" value="{{ recommendation.version }}"><input type="hidden" name="recommendation_hash" value="{{ recommendation.recommendation_hash }}"><input type="hidden" name="review_id" value="{{ recommendation.review.review_id }}"><input type="hidden" name="verification_id" value="{{ recommendation.verification.verification_id }}">
+<p><label>Closure reason <textarea name="reason" required maxlength="2000"></textarea></label></p><button type="submit">Close only this synthetic no-action exercise</button></form>{% endif %}
+{% if tokens.get('reopen') and workflow.state == 'reopen_required' and workflow.eligible %}
+<h3>Explicitly reopen changed exercise</h3>
+<form method="post" action="/cases/{{ workflow.case_id }}/reopen"><input type="hidden" name="csrf_token" value="{{ tokens.reopen }}"><input type="hidden" name="workflow_version" value="{{ workflow.workflow_version }}"><p><label>Reopen reason <textarea name="reason" required maxlength="2000"></textarea></label></p><button type="submit">Append audited reopen</button></form>{% endif %}
+<h3>Exact recommendation, decisions, verification and transition history</h3>
+<p>Recommendation versions: {{ workflow.get('recommendation_count', workflow.recommendations|length) }}. Historical list contains bounded metadata; each exact version opens separately.</p>
+<ul>{% for item in workflow.recommendations %}<li><a href="/cases/{{ workflow.case_id }}/recommendations/{{ item.recommendation_id }}/{{ item.version }}">Recommendation version {{ item.version }}</a> · {{ item.recommendation_hash }}</li>{% endfor %}</ul>
+{% if workflow.get('recommendations_truncated', false) %}<p>Older summaries are truncated. Any assigned exact version remains available through its stable recommendation ID and version reference.</p>{% endif %}
+<p>These records retain prior versions; old or expired authority does not become current again. History projections are bounded.</p><pre>{{ workflow_text }}</pre>
+{% endblock %}

@@ -1,9 +1,17 @@
 # Delivery roadmap
 
-Status: target roadmap with Phase 1A-1, Phase 1A-2 and Phase 1A-3A offline progress recorded below, 2026-11-03. Later work remains gated.
+Status: target roadmap with Phases 1A-1 through Phase 1A-3B offline progress recorded below, 2026-11-03. Later work remains gated.
 Read with the [system design](architecture/SYSTEM_DESIGN.md), [threat model](architecture/THREAT_MODEL.md), [cost and safety plan](architecture/CLOUD_COST_AND_SAFETY.md), and [reuse audit](architecture/REUSE_AUDIT.md).
-Offline parsing/detection, durable PostgreSQL evidence/jobs/unreviewed draft cases and a restricted local authenticated analyst workspace are implemented. No live AWS, SIEM, human review/closure workflow or complete Phase 1 acceptance is claimed.
+Offline parsing/detection, durable PostgreSQL evidence/jobs/unreviewed draft cases and a restricted local authenticated analyst workspace are implemented. Human review and guarded closure now apply only to synthetic no-action exercises. No live AWS, SIEM or complete authentic Phase1 acceptance is claimed.
 Local Phase 0 document validation is recorded below. Remote branch/PR delivery and available check status are reported separately in the PR and delivery report.
+
+## Phase 1A-3B checkpoint
+
+The owner conditionally authorized PR#4 merge at exact reviewed head `45c85db8ff01e85ca5919ff45399ba383d1dd9f0`. Immediately before normal merge, all52 files, eight successful exact-head PR jobs, fresh completed Codex no-findings review, no blocking threads, clean mergeability, unchanged main, correct remote and clean checkout were verified. Merge `c205b4acc4c28650b10def0f8cc8c121deb727ea` preserves tree `77dcdfe5b3c5cdbc2e47556c8921fb9f03bc852b`. Implementation is isolated on `codex/phase1a3b-reviewed-verification-closure`.
+
+Implemented scope and boundaries are in [workflow architecture](architecture/REVIEWED_WORKFLOW.md) and [operations](REVIEWED_WORKFLOW_OPERATIONS.md): fixed no-action recommendations, distinct reviewer decisions, separate restricted verifier, guarded synthetic closure and auditable material-change reopening. Migration003 preserves all old data/migrations and adds explicit human state plus database-enforced pipeline transaction boundaries. Actual test counts, security coverage and independent-review corrections are in the [validation record](PHASE1A3B_VALIDATION.md); exact-head remote CI/review outcomes belong to the published PR/delivery report. A workflow definition is not a successful run. Human mastery remains NOT_RUN; the [new no-AI lab](labs/PHASE1A3B_INTERVIEW_LAB.md) provides a separate assessment.
+
+Stop at the new unmerged review PR. Phase1B readiness remains a review decision, not permission to collect AWS, install Wazuh, enable cloud resources or deploy. Remaining gates include authentic source/digest completeness and signed-file binding, scoped effective live IAM, cost/retention/teardown approval, feasible SIEM hardware and actual query receipts. Local synthetic consistency and reviewed exercise closure satisfy none of those live evidence gates.
 
 ## Phase 1A-3A checkpoint
 

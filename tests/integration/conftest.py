@@ -53,13 +53,18 @@ def admin_db(record_testsuite_property) -> Database:
 
 
 @pytest.fixture(scope="session")
-def db_factory(admin_db: Database) -> Callable[..., Database]:
+def db_factory(
+    admin_db: Database, request: pytest.FixtureRequest, record_testsuite_property
+) -> Callable[..., Database]:
     created: list[str] = []
+    request.addfinalizer(
+        lambda: record_testsuite_property("retained_databases_created", len(created))
+    )
 
     def create(*, migrate: bool = True) -> Database:
-        # The expanded workspace suite needs over 96 fresh databases. Retain a finite
-        # 128-database ceiling; local host/project-volume capacity was rechecked.
-        if len(created) >= 128:
+        # The reviewed-workflow suite has over 146 cases plus restore/upgrade targets.
+        # Retain a finite 192-database ceiling after checking host/volume capacity.
+        if len(created) >= 192:
             pytest.fail("Per-run retained test database cap reached")
         name = "csl_test_" + uuid.uuid4().hex
         try:

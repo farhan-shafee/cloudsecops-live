@@ -1,5 +1,7 @@
 # Local analyst workspace operations
 
+Phase1A-3B extends the preserved login/notes setup below. Follow [reviewed-workflow operations](REVIEWED_WORKFLOW_OPERATIONS.md) for current reviewer capability, migration003, dedicated verifier provisioning, guarded closure and explicit reopening. Statements below about absent approval/verifier features describe historical Phase1A-3A only.
+
 Phase 1A-3A serves synthetic, unauthenticated evidence and unreviewed cases on one machine. Notes are observations, not approval, verification, closure or incident response authority. Keep the browser, server, PostgreSQL and private configuration on that machine. Two accounts operated by one person simulate duties; they are not independent organizational authority.
 
 ## Install and prepare
@@ -10,13 +12,15 @@ Use Python 3.12 or 3.14, the hash-locked development setup in the README, and th
 .venv\Scripts\python.exe scripts/local_postgres.py start
 .venv\Scripts\python.exe -m cloudsecops_live workspace roles-setup --maintenance-config .tools/private/local-postgres.json
 .venv\Scripts\python.exe -m cloudsecops_live workspace init --maintenance-config .tools/private/local-postgres.json --config .tools/private/workspace.json --tls-dir .tools/private/workspace-tls --port 8443
+.venv\Scripts\python.exe -m cloudsecops_live workspace pipeline-add --maintenance-config .tools/private/local-postgres.json --kind collector --config .tools/private/collector.json
+.venv\Scripts\python.exe -m cloudsecops_live workspace pipeline-add --maintenance-config .tools/private/local-postgres.json --kind worker --config .tools/private/worker.json
 .venv\Scripts\python.exe -m cloudsecops_live db-ingest --checkpoint demo-1 fixtures/synthetic/inventory-burst.json.gz
 .venv\Scripts\python.exe -m cloudsecops_live db-work --limit 64
 .venv\Scripts\python.exe -m cloudsecops_live db-cases
 .venv\Scripts\python.exe -m cloudsecops_live db-verify
 ```
 
-On Linux use `.venv/bin/python`. `roles-setup` is the explicit cluster-administrator step: it creates stable non-login capability roles. `init` validates and applies forward migration 002, generates a restricted gate credential and writes a private runtime file. It refuses an existing runtime file. Do not rerun initialization to overwrite a configuration. For an existing compatible v1 database, run role setup followed by `db-migrate`, or let the first `init` migrate it. Never alter migration 001 or its stored checksum. If compatibility checks fail, preserve the database and investigate or use a separately named fresh lab database.
+On Linux use `.venv/bin/python`. `roles-setup` is the explicit cluster-administrator step: it creates stable non-login capability roles. `init` validates and applies the current forward migrations, generates a restricted gate credential and writes a private runtime file. It refuses an existing runtime file. Do not rerun initialization or pipeline provisioning to overwrite a configuration. Normal pipeline commands now use collector/worker private files, not the owner. For an existing compatible database, run role setup followed by `db-migrate --maintenance`, or let the first `init` migrate it. Never alter migrations001/002 or their stored checksums. If compatibility checks fail, preserve the database and investigate or use a separately named fresh lab database.
 
 The maintenance DSN is used only by explicit offline maintenance/provisioning commands. It is absent from `workspace.json`. That file contains generated per-account restricted database credentials and must remain private. Do not print it, include it in bug reports or copy it into source control. Account creation and file replacement are separate local operations: if a private-file write fails after provisioning, stop and have the maintenance operator reconcile the account; do not edit role mappings or rebaseline integrity hashes.
 

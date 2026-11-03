@@ -12,7 +12,20 @@ def test_cli_malformed_source_is_durably_quarantined_without_partial_evidence(db
     config.write_text(json.dumps({"dsn": make_conninfo(**db._values)}), encoding="utf-8")
     source = tmp_path / "malformed.json.gz"
     source.write_bytes(b"bad-gzip")
-    assert main(["db-ingest", "--config", str(config), "--checkpoint", "bad", str(source)]) == 2
+    assert (
+        main(
+            [
+                "db-ingest",
+                "--maintenance",
+                "--config",
+                str(config),
+                "--checkpoint",
+                "bad",
+                str(source),
+            ]
+        )
+        == 2
+    )
     with db.connect() as conn:
         assert conn.execute("SELECT count(*) AS n FROM csl.raw_objects").fetchone()["n"] == 0
         assert conn.execute("SELECT count(*) AS n FROM csl.checkpoints").fetchone()["n"] == 0

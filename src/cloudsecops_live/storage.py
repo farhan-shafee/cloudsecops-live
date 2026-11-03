@@ -19,7 +19,7 @@ from cloudsecops_live.contracts import (
     ParsedLog,
     RecordReference,
 )
-from cloudsecops_live.database import Database
+from cloudsecops_live.database import Database, machine_audit
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.ingestion import parse_bytes
 
@@ -534,9 +534,8 @@ def _ingest(
                     "INSERT INTO csl.jobs(job_id,generation) VALUES (%s,%s)",
                     (str(uuid4()), generation),
                 )
-            conn.execute(
-                "INSERT INTO csl.audit(kind,payload) VALUES ('ingestion_committed',%s)",
-                (Jsonb({"batch_id": batch_id, "generation": generation}),),
+            machine_audit(
+                conn, "ingestion_committed", {"batch_id": batch_id, "generation": generation}
             )
             if fault:
                 fault("before_ingest_commit")

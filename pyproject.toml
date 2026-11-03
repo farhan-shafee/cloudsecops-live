@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cloudsecops-live"
-version = "0.3.0"
-description = "Local authenticated investigation workspace over synthetic security evidence"
+version = "0.4.0"
+description = "Reviewed synthetic investigations with restricted verification and guarded closure"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"

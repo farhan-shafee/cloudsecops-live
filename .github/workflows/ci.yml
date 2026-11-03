@@ -73,7 +73,7 @@ jobs:
           $wheelCli = if ($IsWindows) { '.wheel-venv/Scripts/cloudsecops-live.exe' } else { '.wheel-venv/bin/cloudsecops-live' }
           & $wheelCli --help
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & $wheelPython -I -c "from importlib.resources import files; from cloudsecops_live.database import LATEST_SCHEMA_VERSION; assert LATEST_SCHEMA_VERSION == 2; root = files('cloudsecops_live'); assert all(root.joinpath(path).is_file() for path in ('sql/001_initial.sql', 'sql/002_workspace.sql', 'templates/login.html', 'templates/case.html'))"
+          & $wheelPython -I -c "from importlib.resources import files; from cloudsecops_live.database import LATEST_SCHEMA_VERSION; assert LATEST_SCHEMA_VERSION == 3; root = files('cloudsecops_live'); assert all(root.joinpath(path).is_file() for path in ('sql/001_initial.sql', 'sql/002_workspace.sql', 'sql/003_reviewed_workflow.sql', 'templates/login.html', 'templates/case.html', 'templates/workflow.html', 'templates/workflow_recommendation.html', 'templates/review_queue.html'))"
       - name: Retain sanitized coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

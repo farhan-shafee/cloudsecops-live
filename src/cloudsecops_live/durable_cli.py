@@ -10,6 +10,7 @@ from cloudsecops_live.cli import _error, _load, _Parser
 from cloudsecops_live.database import LATEST_SCHEMA_VERSION, Database
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.outbox import deliver_once
+from cloudsecops_live.pipeline_roles import load_pipeline_config
 from cloudsecops_live.storage import ingest, record_ingestion_error, verify_store
 from cloudsecops_live.worker import work_once
 
@@ -62,7 +63,8 @@ def main(argv: Sequence[str]) -> int:
             "db-verify",
         ),
     )
-    parser.add_argument("--config", default=".tools/private/local-postgres.json")
+    parser.add_argument("--config")
+    parser.add_argument("--maintenance", action="store_true")
     parser.add_argument("--checkpoint")
     parser.add_argument("--limit", type=int, default=1)
     parser.add_argument("paths", nargs="*")
@@ -72,7 +74,13 @@ def main(argv: Sequence[str]) -> int:
             raise EvidenceError("USAGE")
         if (args.command == "db-ingest") != bool(args.paths):
             raise EvidenceError("USAGE")
-        db = _database(args.config)
+        if args.command == "db-migrate" and not args.maintenance:
+            raise EvidenceError("USAGE")
+        if args.maintenance:
+            db = _database(args.config or ".tools/private/local-postgres.json")
+        else:
+            kind = "collector" if args.command == "db-ingest" else "worker"
+            db = load_pipeline_config(args.config or f".tools/private/{kind}.json", kind)
         status = 0
         if args.command == "db-migrate":
             db.migrate()
