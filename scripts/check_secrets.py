@@ -6,7 +6,7 @@ unavoidable scanner false positive requires a reviewed, same-line
 Only paths, line numbers and finding types are printed, never matched values.
 """
 
-import json
+import logging
 import re
 import subprocess
 import sys
@@ -18,6 +18,12 @@ ROOT = Path(__file__).resolve().parents[1]
 ACCOUNT = re.compile(r"(?<![A-Za-z0-9])\d{12}(?![A-Za-z0-9])")
 _ARCHIVE_LIMIT = 10 * 1024 * 1024
 _CONTENT_LIMIT = 100 * 1024 * 1024
+
+
+class _IncompleteScan(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.levelno >= logging.WARNING:
+            raise ValueError("scanner reported incomplete evidence")
 
 
 def _scan_content(path: Path) -> bytes:
@@ -46,6 +52,9 @@ def _scan_content(path: Path) -> bytes:
 
 def main() -> int:
     try:
+        from detect_secrets.core.scan import scan_file
+        from detect_secrets.settings import default_settings
+
         if sys.argv[1:]:
             paths = [Path(name).resolve(strict=True) for name in sys.argv[1:]]
         else:
@@ -77,38 +86,48 @@ def main() -> int:
                 copy.write_bytes(data)
                 originals[copy.name] = path
                 copies.append(copy)
-            for start in range(0, len(copies), 100):
-                result = subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "detect_secrets",
-                        "scan",
-                        "--no-verify",
-                        *(str(path) for path in copies[start : start + 100]),
-                    ],
-                    cwd=scan_root,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    check=True,
-                )
-                if result.stderr.strip():
-                    raise ValueError("secret scanner reported incomplete evidence")
-                report = json.loads(result.stdout)
-                if not report.get("plugins_used") or not isinstance(report.get("results"), dict):
-                    raise ValueError("missing scanner evidence")
-                for filename, findings in report["results"].items():
-                    for finding in findings:
-                        original = originals[Path(filename).name]
-                        print(f"{original}:{finding['line_number']}: {finding['type']}")
-                        found = True
+            # CLI discovery slices real paths by cwd spelling and can silently skip
+            # Windows aliases. Scan each prepared absolute file directly. These
+            # default local filters do not enable remote credential verification.
+            logger = logging.getLogger("detect-secrets")
+            handler = _IncompleteScan(level=logging.WARNING)
+            previous_level = logger.level
+            logger.setLevel(logging.WARNING)
+            logger.addHandler(handler)
+            try:
+                with default_settings() as settings:
+                    if not settings.json().get("plugins_used"):
+                        raise ValueError("missing scanner plugins")
+                    for copy in copies:
+                        for finding in scan_file(str(copy.resolve(strict=True))):
+                            original = originals[copy.name]
+                            print(f"{original}:{finding.line_number}: {finding.type}")
+                            found = True
+            finally:
+                logger.removeHandler(handler)
+                logger.setLevel(previous_level)
         print(f"scanned {len(paths)} file(s); {'findings present' if found else 'no findings'}")
         return int(found)
-    except (OSError, ValueError, KeyError, TypeError, zlib.error, subprocess.CalledProcessError):
+    except (
+        ImportError,
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        zlib.error,
+        subprocess.CalledProcessError,
+    ):
         print("Secret scan failed: required scan evidence unavailable.", file=sys.stderr)
         return 2
 
 
 if __name__ == "__main__":
+    # Third-party file reads use the process locale and otherwise silently skip
+    # valid UTF-8 on Windows. Re-exec only this local scanner with explicit UTF-8.
+    if not sys.flags.utf8_mode:
+        raise SystemExit(
+            subprocess.call(
+                [sys.executable, "-X", "utf8", str(Path(__file__).resolve()), *sys.argv[1:]]
+            )
+        )
     raise SystemExit(main())

@@ -5,10 +5,40 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_unicode_text_cannot_hide_a_secret_on_windows_locale(tmp_path: Path) -> None:
+    candidate = tmp_path / "unicode.py"
+    token = "AKIA" + "Z7Q3M8R2N5P6V9T4"
+    candidate.write_text("# comment " + chr(129) + f'\naccess_key="{token}"\n', encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_secrets.py"), str(candidate)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1 and "AWS Access Key" in result.stdout
+    assert token not in result.stdout + result.stderr
+
+
+def test_scanner_io_warning_is_failure_not_a_clean_scan(tmp_path: Path, capsys: object) -> None:
+    from scripts.check_secrets import main
+
+    candidate = tmp_path / "clean.py"
+    candidate.write_text("clean = True\n", encoding="utf-8")
+    with (
+        patch("sys.argv", ["check_secrets.py", str(candidate)]),
+        patch(
+            "detect_secrets.core.scan._get_lines_from_file",
+            side_effect=OSError("private-error-detail"),
+        ),
+    ):
+        assert main() == 2
 
 
 def test_workflow_can_be_loaded_as_yaml_with_executable_string_steps() -> None:
