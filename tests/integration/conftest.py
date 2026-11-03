@@ -57,7 +57,9 @@ def db_factory(admin_db: Database) -> Callable[..., Database]:
     created: list[str] = []
 
     def create(*, migrate: bool = True) -> Database:
-        if len(created) >= 96:
+        # The expanded workspace suite needs over 96 fresh databases. Retain a finite
+        # 128-database ceiling; local host/project-volume capacity was rechecked.
+        if len(created) >= 128:
             pytest.fail("Per-run retained test database cap reached")
         name = "csl_test_" + uuid.uuid4().hex
         try:
@@ -66,11 +68,21 @@ def db_factory(admin_db: Database) -> Callable[..., Database]:
                 conn.execute(
                     sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(name))
                 )
+                # Quarantine fresh/restore targets before any definer functions exist.
+                # Only the maintenance owner can connect until security is reconstructed.
+                conn.execute(
+                    sql.SQL("REVOKE CONNECT ON DATABASE {} FROM PUBLIC").format(
+                        sql.Identifier(name)
+                    )
+                )
         except psycopg.Error:
             pytest.fail("Could not create retained scoped test database", pytrace=False)
         created.append(name)
         db = Database(make_conninfo(**{**admin_db._values, "dbname": name}))
         if migrate:
+            from cloudsecops_live.workspace_roles import setup_roles
+
+            setup_roles(db)
             db.migrate()
         return db
 

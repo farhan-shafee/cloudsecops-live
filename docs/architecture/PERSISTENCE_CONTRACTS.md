@@ -2,6 +2,8 @@
 
 Phase 1A-2 adds a local PostgreSQL boundary to the [offline foundation](../OFFLINE_FOUNDATION.md). Everything accepted is synthetic and unauthenticated. No database row, local checksum, draft case or sink receipt is an AWS authenticity receipt.
 
+Phase 1A-3A adds [restricted local workspace identities](ANALYST_WORKSPACE.md), expiring hashed sessions, per-case access, append-only notes and atomic note audit. These are additional tables/functions under forward migration 002; the original 22 tables, immutable evidence, worker/checkpoint and outbox contracts remain. Migration 001 and its original ledger fields are unchanged. The engine validates contiguous numbered checksums and the live prior catalog before atomic migration. A separate full v2 fingerprint includes owner/ACL/function/default/column and database/schema authority; it cannot be silently replaced during restore. [Recovery](../FAILURE_AND_RECOVERY.md#workspace-backup-and-protected-restore) requires a connection-quarantined target before loading a no-ACL dump, explicit role reconstruction and original-fingerprint validation before runtime access.
+
 ## Storage and transactions
 
 PostgreSQL 17.11 is pinned by official image digest; Psycopg 3.3.7 is pinned with package hashes. PostgreSQL 17 remains supported through November 2029 ([version policy](https://www.postgresql.org/support/versioning/)). The driver supports Python 3.12 and 3.14 ([Psycopg installation](https://www.psycopg.org/psycopg3/docs/basic/install.html)). Psycopg's LGPL license remains separate from this project's original-code MIT license.

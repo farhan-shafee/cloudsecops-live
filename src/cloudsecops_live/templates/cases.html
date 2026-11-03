@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block content %}<main><h2>Assigned investigation cases</h2>
+<p>Access is explicitly granted. Merged cases require a separate grant.</p>
+<ul>{% for case in cases %}<li><a href="/cases/{{ case.case_id }}">{{ case.case_id }}</a> — {{ case.status }}, revision {{ case.current_revision }}</li>{% else %}<li>No assigned cases.</li>{% endfor %}</ul>
+{% if next_offset is not none %}<a href="/cases?offset={{ next_offset }}&amp;limit={{ limit }}">Next page</a>{% endif %}</main>{% endblock %}

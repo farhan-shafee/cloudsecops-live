@@ -12,6 +12,7 @@ import re
 from hashlib import sha256
 from importlib.resources import files
 from typing import Any
+from uuid import uuid4
 
 import psycopg
 from psycopg import Connection
@@ -21,6 +22,8 @@ from psycopg.rows import dict_row
 from cloudsecops_live.errors import EvidenceError
 
 _MIGRATION = files("cloudsecops_live").joinpath("sql/001_initial.sql")
+_MIGRATIONS = (_MIGRATION, files("cloudsecops_live").joinpath("sql/002_workspace.sql"))
+LATEST_SCHEMA_VERSION = len(_MIGRATIONS)
 _ALLOWED = {"host", "port", "dbname", "user", "password", "connect_timeout", "application_name"}
 
 
@@ -57,6 +60,53 @@ def _schema_hash(conn: Connection[dict[str, Any]]) -> str:
            ORDER BY 1,2,3,4"""
     ).fetchall()
     return sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _security_hash(conn: Connection[dict[str, Any]]) -> str:
+    """Bind the structural receipt to ownership, effective ACLs and default ACLs."""
+    rows = conn.execute(
+        """SELECT 'relation' AS kind,c.relname AS name,
+        pg_catalog.pg_get_userbyid(c.relowner) AS owner,
+        coalesce(c.relacl::text,'') AS acl FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='csl'
+        UNION ALL SELECT 'column',c.relname||'.'||a.attname,
+        pg_catalog.pg_get_userbyid(c.relowner),coalesce(a.attacl::text,'')
+        FROM pg_catalog.pg_attribute a JOIN pg_catalog.pg_class c ON c.oid=a.attrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='csl' AND a.attnum>0 AND NOT a.attisdropped
+        UNION ALL SELECT 'function',p.oid::regprocedure::text,
+        pg_catalog.pg_get_userbyid(p.proowner),coalesce(p.proacl::text,'')||':'||
+        p.prosecdef::text||':'||coalesce(p.proconfig::text,'')
+        FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+        WHERE n.nspname='csl'
+        UNION ALL SELECT 'schema',n.nspname,pg_catalog.pg_get_userbyid(n.nspowner),
+        coalesce(n.nspacl::text,'') FROM pg_catalog.pg_namespace n
+        WHERE n.nspname IN ('csl','public')
+        UNION ALL SELECT 'database','current',pg_catalog.pg_get_userbyid(d.datdba),
+        coalesce(d.datacl::text,'') FROM pg_catalog.pg_database d
+        WHERE d.datname=pg_catalog.current_database()
+        UNION ALL SELECT 'default',d.defaclobjtype::text,pg_catalog.pg_get_userbyid(d.defaclrole),
+        d.defaclacl::text FROM pg_catalog.pg_default_acl d
+        JOIN pg_catalog.pg_namespace n ON n.oid=d.defaclnamespace WHERE n.nspname='csl'
+        UNION ALL SELECT 'default_global',d.defaclobjtype::text,
+        pg_catalog.pg_get_userbyid(d.defaclrole),d.defaclacl::text
+        FROM pg_catalog.pg_default_acl d
+        WHERE d.defaclnamespace=0 AND d.defaclobjtype='f' AND d.defaclrole=
+        (SELECT oid FROM pg_catalog.pg_roles WHERE rolname='csl_ws_owner')
+        ORDER BY 1,2,3,4"""
+    ).fetchall()
+    return sha256(
+        (_schema_hash(conn) + json.dumps(rows, sort_keys=True, separators=(",", ":"))).encode()
+    ).hexdigest()
+
+
+def _validate_prefix(rows: list[dict[str, Any]]) -> None:
+    if not rows or len(rows) > len(_MIGRATIONS):
+        raise EvidenceError("SCHEMA_INCOMPATIBLE")
+    for version, row in enumerate(rows, 1):
+        source = _MIGRATION if version == 1 else _MIGRATIONS[version - 1]
+        if row["version"] != version or row["checksum"] != sha256(source.read_bytes()).hexdigest():
+            raise EvidenceError("SCHEMA_INCOMPATIBLE")
 
 
 class Database:
@@ -100,21 +150,60 @@ class Database:
             raise EvidenceError("UNSUPPORTED_DATABASE_VERSION")
         return conn
 
-    def migrate(self) -> None:
-        """Initial migration is atomic and rejects unknown pre-existing state."""
+    def migrate(self, *, target_version: int | None = None) -> None:
+        """Apply a verified forward-only checksum prefix in one atomic transaction."""
+        target = len(_MIGRATIONS) if target_version is None else target_version
+        if type(target) is not int or not 1 <= target <= len(_MIGRATIONS):
+            raise EvidenceError("SCHEMA_INCOMPATIBLE")
         with self.connect() as conn, conn.transaction():
             conn.execute("SELECT pg_advisory_xact_lock(7242601103)")
             exists = conn.execute("SELECT to_regnamespace('csl') IS NOT NULL AS present").fetchone()
             if exists and exists["present"]:
+                try:
+                    ledger = conn.execute(
+                        "SELECT to_regclass('csl.schema_migrations') AS found"
+                    ).fetchone()
+                    if not ledger or not ledger["found"]:
+                        raise EvidenceError("SCHEMA_MISSING")
+                    rows = conn.execute(
+                        "SELECT version,checksum,schema_hash FROM "
+                        "csl.schema_migrations ORDER BY version"
+                    ).fetchall()
+                    _validate_prefix(rows)
+                    actual = _schema_hash(conn) if len(rows) == 1 else _security_hash(conn)
+                    if rows[-1]["schema_hash"] != actual or target < len(rows):
+                        raise EvidenceError("SCHEMA_INCOMPATIBLE")
+                except psycopg.Error:
+                    raise EvidenceError("SCHEMA_INCOMPATIBLE") from None
+            else:
+                rows = []
+            for version in range(len(rows) + 1, target + 1):
+                source = _MIGRATION if version == 1 else _MIGRATIONS[version - 1]
+                script = source.read_bytes().decode("utf-8")
+                conn.execute(script)
+                if version == 2:
+                    from cloudsecops_live.workspace_roles import apply_security
+
+                    apply_security(conn)
+                    conn.execute(
+                        "INSERT INTO csl.schema_migrations(version,checksum,schema_hash,"
+                        "structural_hash,database_id) VALUES (%s,%s,%s,%s,%s)",
+                        (
+                            version,
+                            sha256(script.encode()).hexdigest(),
+                            _security_hash(conn),
+                            _schema_hash(conn),
+                            uuid4(),
+                        ),
+                    )
+                else:
+                    conn.execute(
+                        "INSERT INTO csl.schema_migrations(version,checksum,schema_hash) "
+                        "VALUES (1,%s,%s)",
+                        (sha256(script.encode()).hexdigest(), _schema_hash(conn)),
+                    )
+            if target == len(_MIGRATIONS):
                 self.check_schema(conn)
-                return
-            script = _MIGRATION.read_bytes().decode("utf-8")
-            conn.execute(script)
-            conn.execute(
-                "INSERT INTO csl.schema_migrations(version,checksum,schema_hash) VALUES (1,%s,%s)",
-                (sha256(script.encode()).hexdigest(), _schema_hash(conn)),
-            )
-            self.check_schema(conn)
 
     @staticmethod
     def check_schema(conn: Connection[dict[str, Any]]) -> None:
@@ -127,10 +216,10 @@ class Database:
             rows = conn.execute(
                 "SELECT version,checksum,schema_hash FROM csl.schema_migrations ORDER BY version"
             ).fetchall()
-            checksum = sha256(_MIGRATION.read_bytes()).hexdigest()
-            if len(rows) != 1 or rows[0]["version"] != 1 or rows[0]["checksum"] != checksum:
+            _validate_prefix(rows)
+            if len(rows) != len(_MIGRATIONS):
                 raise EvidenceError("SCHEMA_INCOMPATIBLE")
-            if rows[0]["schema_hash"] != _schema_hash(conn):
+            if rows[-1]["schema_hash"] != _security_hash(conn):
                 raise EvidenceError("SCHEMA_INCOMPATIBLE")
             pipeline = conn.execute("SELECT count(*) AS n FROM csl.pipeline").fetchone()
             if not pipeline or pipeline["n"] != 1:

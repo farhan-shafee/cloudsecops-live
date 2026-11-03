@@ -42,6 +42,13 @@ TABLES = (
     "outbox",
     "offline_sink",
     "audit",
+    "ws_users",
+    "ws_sessions",
+    "ws_csrf",
+    "ws_preauth",
+    "ws_throttle",
+    "ws_case_grants",
+    "ws_notes",
 )
 
 

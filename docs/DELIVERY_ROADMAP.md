@@ -1,9 +1,17 @@
 # Delivery roadmap
 
-Status: target roadmap with Phase 1A-1 and Phase 1A-2 offline progress recorded below, 2026-11-03. Later work remains gated.
+Status: target roadmap with Phase 1A-1, Phase 1A-2 and Phase 1A-3A offline progress recorded below, 2026-11-03. Later work remains gated.
 Read with the [system design](architecture/SYSTEM_DESIGN.md), [threat model](architecture/THREAT_MODEL.md), [cost and safety plan](architecture/CLOUD_COST_AND_SAFETY.md), and [reuse audit](architecture/REUSE_AUDIT.md).
-Offline parsing/detection and durable PostgreSQL evidence/jobs/unreviewed draft cases are implemented. No live AWS, SIEM, human review/closure workflow or complete Phase 1 acceptance is claimed.
+Offline parsing/detection, durable PostgreSQL evidence/jobs/unreviewed draft cases and a restricted local authenticated analyst workspace are implemented. No live AWS, SIEM, human review/closure workflow or complete Phase 1 acceptance is claimed.
 Local Phase 0 document validation is recorded below. Remote branch/PR delivery and available check status are reported separately in the PR and delivery report.
+
+## Phase 1A-3A checkpoint
+
+The corrected PR #3 exact approved head `cdf2ad4a18dc5b823bc9cd5d802736b2a79995d4`, 50-file scope, eight successful PR CI jobs, resolved original P2 thread, fresh Codex no-findings review, clean tree, correct remote/base and clean mergeability were independently rechecked immediately before normal merge. Merge `51643025451fdd3d23e0b5280dc529004e8d1ccd` retains its reviewed tree `6852dd040d5700107fd352a0e3c699b85e33f971`. Work is isolated on `codex/phase1a3a-secure-analyst-workspace`.
+
+Implemented: local loopback HTTPS FastAPI/Jinja pages; protected local account provisioning; Argon2id; hashed opaque server sessions; persistent throttles; per-case SQL authorization; exact-record evidence/history/lineage views; CSRF and browser boundaries; current-version notes with atomic audit; distinct restricted auth/data identities; forward migration 002, privilege drift checks and quarantined restore repair. Original parser, NUL quarantine, durable jobs/replay, case revisions and outbox contracts remain in scope. See [workspace operations](WORKSPACE_OPERATIONS.md), [security design](architecture/ANALYST_WORKSPACE.md), [validation](PHASE1A3A_VALIDATION.md) and [independent lab](labs/PHASE1A3A_INTERVIEW_LAB.md).
+
+Stop after the unmerged Phase 1A-3A review PR. Recommended separately authorized Phase 1A-3B boundary: exact evidence/revision-bound recommendations, distinct reviewer approval, independent verifier SQL authority and guarded closure, with stale/replay/self-review/contradictory-verification tests. No cloud execution, Wazuh, public hosting or AI is supplied by that recommendation. Accounts operated by one person remain a lab simulation. Human mastery remains NOT_RUN.
 
 ## Phase 1A-2 checkpoint
 

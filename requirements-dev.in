@@ -16,3 +16,5 @@ detect-secrets==1.5.0
 pip==26.3
 pyyaml==6.0.3  # Workflow syntax regression checks; also pinned transitively.
 psycopg[binary]==3.3.7  # LGPL-3.0-only; separate dependency license, not project MIT.
+-r requirements-runtime.in
+httpx==0.28.1  # BSD-3-Clause; test-only trusted TLS/ASGI client.

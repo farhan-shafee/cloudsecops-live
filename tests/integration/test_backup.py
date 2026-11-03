@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+from hashlib import sha256
 from typing import Any
 
 import pytest
@@ -107,7 +108,10 @@ def snapshot(db) -> dict[str, list[str]]:
             records: list[dict[str, Any]] = conn.execute(
                 sql.SQL("SELECT row_to_json(t) AS value FROM csl.{} t").format(sql.Identifier(name))
             ).fetchall()
-            result[name] = sorted(json.dumps(record["value"], sort_keys=True) for record in records)
+            result[name] = sorted(
+                sha256(json.dumps(record["value"], sort_keys=True).encode()).hexdigest()
+                for record in records
+            )
     return result
 
 
@@ -126,6 +130,12 @@ def test_real_pg_dump_restore_validates_every_table_and_original_byte(db, db_fac
     pg_command(
         restored, "pg_restore", ["--no-owner", "--no-privileges", "--exit-on-error"], archive
     )
+    from cloudsecops_live.errors import EvidenceError
+    from cloudsecops_live.workspace_roles import restore_security
+
+    with pytest.raises(EvidenceError):
+        verify_store(restored)
+    restore_security(restored)
     assert verify_store(restored)["verified"] is True
     assert snapshot(restored) == before
     assert current(restored)[0]["payload"]["evidence_event_ids"] == [

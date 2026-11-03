@@ -12,6 +12,15 @@ DURABLE = {
     "worker/outbox": ("worker", "outbox"),
     "cases": ("cases",),
 }
+SECURITY = (
+    "workspace_auth",
+    "workspace_web",
+    "workspace_store",
+    "workspace_roles",
+    "workspace_config",
+    "workspace_tls",
+    "workspace_cli",
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -55,6 +64,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", nargs="?", type=Path, default=Path("coverage.json"))
     parser.add_argument("--require-durable", action="store_true")
+    parser.add_argument("--require-security", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -96,6 +106,14 @@ def main() -> int:
                 raise ValueError("required durable module was not executed")
             group_lines, group_branches = percentages(summaries)
             print(f"{group}: lines {group_lines:.2f}%, branches {group_branches:.2f}% (reported)")
+        if options.require_security:
+            for module in SECURITY:
+                summary = module_summary(files, module)
+                if summary["num_branches"] <= 0 or summary["covered_lines"] <= 0:
+                    raise ValueError("required security module was not executed")
+                _, branches = percentages([summary])
+                print(f"{module}.py: branch {branches:.2f}% (required >=85%)")
+                passed &= branches >= 85
         return 0 if passed and lines >= 90 else 1
     except (OSError, ValueError, KeyError, TypeError, ZeroDivisionError):
         print("Coverage gate failed: required coverage evidence unavailable.", file=sys.stderr)

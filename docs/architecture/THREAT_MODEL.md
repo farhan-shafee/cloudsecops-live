@@ -1,6 +1,6 @@
 # Threat model
 
-Status: target threat model, 2026-11-03. Phase 1A-1 covers [offline parsing/detection](../OFFLINE_FOUNDATION.md); Phase 1A-2 adds [local persistence and recovery controls](PERSISTENCE_CONTRACTS.md). Live-source, human authorization and response controls remain requirements. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
+Status: target threat model, 2026-11-03. Phase 1A-1 covers [offline parsing/detection](../OFFLINE_FOUNDATION.md); Phase 1A-2 adds [local persistence and recovery controls](PERSISTENCE_CONTRACTS.md). Phase 1A-3A implements [local authentication, per-case authorization and append-only notes](ANALYST_WORKSPACE.md). Live-source trust, reviewer approval, independent verification and response controls remain requirements. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
 
 ## Assets, actors and scope
 
@@ -9,6 +9,18 @@ Assets: private raw logs/digests, source locations, role sessions, configuration
 Adversaries include an unauthenticated local-network user; a malicious/compromised analyst; an actor generating misleading AWS events; a compromised dependency, CI job or SIEM; malicious log text targeting a browser or optional model; and operator error. Account root, local administrator and hypervisor compromise remain high-impact residual risks. Hashes do not prevent privileged deletion, and two accounts on one laptop do not establish institutional separation of duties.
 
 Trust zones: AWS control plane, source archive, collector/parser, database/API, browser, Wazuh VM, verifier, optional AI provider, CI and public GitHub. Review changes against the [data-flow diagram](SYSTEM_DESIGN.md#deployment-and-trust-boundaries).
+
+## Implemented local workspace boundary
+
+Phase 1A-3A addresses hostile browser requests and malicious account actions through both HTTP checks and actual restricted PostgreSQL identities. See the [permission matrix](ANALYST_WORKSPACE.md). The normal web configuration contains no owner/maintenance/collector credential. Each account has distinct auth and data LOGIN roles bound through `SESSION_USER`; capabilities expose only named security-definer functions. Reviewer/auditor data identities cannot mutate notes, evidence, sessions or audit. No runtime identity owns objects, can create database/schema objects, can assume owner/verifier roles or receives direct table/column DML. Startup validates these restrictions and the full security catalog, including column grants and database ownership.
+
+Passwords use reviewed bounded Argon2id parameters and protected interactive provisioning. Random opaque sessions persist only hashed tokens; disabled, expired, rotated and revoked bearers fail. Persistent finite throttle buckets and one-use pre-login/session CSRF challenges survive server restart. Per-object grants are rechecked for lists, findings, exact record variants, historical revisions and lineage; unauthorized identifiers get the same 404. New merged cases do not inherit grants. No fixture, request header, cookie role field or note can elevate source trust or authority.
+
+Loopback-only TLS, exact HTTPS Host/Origin checks, cross-site rejection, Secure/HttpOnly/SameSite cookies, no CORS, restrictive CSP, escaped Jinja output, parameterized SQL, bounded request bodies/processing and no-store responses contain browser attacks. Generic client failures and disabled debug/access logs limit secret disclosure. Notes use a current machine revision/fingerprint, row lock, one-use nonce and atomic author-bound note/audit insertion; failure cannot partially commit. Historical evidence and findings remain immutable to runtime users.
+
+Restore targets must revoke PUBLIC CONNECT before a no-owner/no-ACL restore; runtime connectivity returns only when security reconstruction and the original full fingerprint validate atomically. Otherwise temporarily PUBLIC security-definer helpers could expose restored data. The tested restore preserves identities, session hashes, grants, notes and audit; cluster roles/private config are separately protected and not supplied by a database dump.
+
+Residual risks: a local administrator, maintenance superuser or full web-process/private all-account configuration compromise can impersonate configured users or bypass routine SQL controls. Individual account SQL credential theft is scoped to that identity, but it is still a credential compromise. Login throttling permits local denial of service; MFA, remote identity, host isolation, public-server hardening and cross-host recovery are absent. Truncated history/note/source projections expose their total counts; they are not completeness claims. Evidence remains synthetic and unauthenticated, accounts are a lab simulation, and reviewer approval/verifier/closure/containment are absent. Security tests are not a penetration-test certification or evidence of field detection efficacy.
 
 ## Abuse cases and required checks
 

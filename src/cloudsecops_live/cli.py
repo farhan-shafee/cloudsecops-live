@@ -113,6 +113,10 @@ def _error(code: str, status: int) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "workspace":
+        from cloudsecops_live.workspace_cli import main as workspace_main
+
+        return workspace_main(arguments[1:])
     if arguments and arguments[0].startswith("db-"):
         from cloudsecops_live.durable_cli import main as durable_main
 

@@ -1,3 +1,13 @@
 # Local PostgreSQL runtime driver; parsing/detection remain standard-library code.
 # Psycopg LGPL-3.0-only, retained as a separately licensed dependency.
 psycopg[binary]==3.3.7
+# Public PyPI metadata reviewed 2026-11-03, all stable and non-yanked.
+# MIT: FastAPI/argon2-cffi. BSD-3-Clause: Uvicorn/Jinja2.
+# cryptography: Apache-2.0 OR BSD-3-Clause. Original code remains MIT.
+# Minimal FastAPI only: passive opentelemetry-api transitive dependency; no SDK,
+# exporter, cloud CLI, hosted service, automatic instrumentation or standard extra.
+fastapi==0.162.0
+uvicorn==0.54.0
+argon2-cffi==25.1.0
+Jinja2==3.1.6
+cryptography==50.0.2
