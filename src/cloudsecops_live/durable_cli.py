@@ -7,7 +7,7 @@ from pathlib import Path
 import psycopg
 
 from cloudsecops_live.cli import _error, _load, _Parser
-from cloudsecops_live.database import Database
+from cloudsecops_live.database import LATEST_SCHEMA_VERSION, Database
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.outbox import deliver_once
 from cloudsecops_live.storage import ingest, record_ingestion_error, verify_store
@@ -76,7 +76,10 @@ def main(argv: Sequence[str]) -> int:
         status = 0
         if args.command == "db-migrate":
             db.migrate()
-            result: dict[str, object] = {"schema_version": 1, "status": "migrated"}
+            result: dict[str, object] = {
+                "schema_version": LATEST_SCHEMA_VERSION,
+                "status": "migrated",
+            }
         elif args.command == "db-ingest":
             try:
                 logs = _load(args.paths)

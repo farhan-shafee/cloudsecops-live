@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CloudSecOps Live</title></head>
+<body><header><h1>CloudSecOps Live</h1><p><strong>Synthetic, unauthenticated evidence. Unreviewed lab cases.</strong></p>
+{% if navigation is defined %}<nav><a href="/cases">Assigned cases</a> · {{ navigation.username }} ({{ navigation.role }})</nav>
+<form action="/logout" method="post"><input type="hidden" name="csrf_token" value="{{ navigation.logout_csrf }}"><button type="submit">Sign out</button></form>
+<form action="/session/rotate" method="post"><input type="hidden" name="csrf_token" value="{{ navigation.rotate_csrf }}"><button type="submit">Renew session</button></form>{% endif %}</header><hr>
+{% block content %}{% endblock %}
+<footer><p>Notes do not approve, verify, close or authorize incident response. No AWS source authentication or SIEM receipt is established.</p></footer></body></html>

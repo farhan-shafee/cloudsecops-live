@@ -4,11 +4,15 @@ An AWS-first security engineering portfolio and training environment. The intend
 
 **Actual AWS event → trusted ingestion → preserved evidence → tested detection → analyst investigation → reviewed response recommendation → independently verified outcome.**
 
-## Current status: Phase 1A-2 durable offline pipeline
+## Current status: Phase 1A-3A local analyst workspace
 
 The first executable slice is implemented: **explicitly synthetic CloudTrail-shaped gzip → bounded parsing → preserved compressed/content provenance → normalized events → deterministic inventory-burst candidate findings**.
 
 The foundation now also persists synthetic originals and normalized events in isolated local PostgreSQL, advances transactional checkpoints, runs leased detection jobs, and creates revisioned unreviewed draft cases with an offline test outbox. Restart/replay and backup/restore tests exercise this local boundary. Internal SHA-256 values establish consistency within their stated domain, never AWS source authenticity or detection efficacy.
+
+The local FastAPI workspace adds explicitly provisioned accounts, Argon2id passwords, expiring server-side sessions, per-case grants, read-only evidence/history and version-bound append-only analyst notes with atomic audit. Restricted per-account PostgreSQL identities enforce case access and write limits. Browser serving requires loopback TLS; no machine-wide trust changes are made. See the [setup and smoke commands](docs/WORKSPACE_OPERATIONS.md) and [permission model](docs/architecture/ANALYST_WORKSPACE.md).
+
+Corrected [PR #3](https://github.com/farhan-shafee/cloudsecops-live/pull/3) was normally merged at `51643025451fdd3d23e0b5280dc529004e8d1ccd` after verifying the exact approved head, 50-file scope, eight successful exact-head PR jobs, resolved P2 and fresh no-findings review. Phase 1A-3A is delivered separately for review.
 
 Phase 0 [PR #1](https://github.com/farhan-shafee/cloudsecops-live/pull/1) was merged only after verifying its exact authorized head, seven-file documentation scope and clean mergeability. No required checks existed; none were represented as passing.
 
@@ -43,6 +47,9 @@ The project does not claim production SOC experience, operational incident autho
 
 | Document | Purpose |
 | --- | --- |
+| [Workspace setup](docs/WORKSPACE_OPERATIONS.md) | Protected account provisioning, local TLS, smoke test and session operations |
+| [Workspace security model](docs/architecture/ANALYST_WORKSPACE.md) | Database permission matrix, object access, notes and restore quarantine |
+| [Workspace interview lab](docs/labs/PHASE1A3A_INTERVIEW_LAB.md) | Independent no-AI authentication, SQL, browser and transaction exercises |
 | [Persistence contracts](docs/architecture/PERSISTENCE_CONTRACTS.md) | Database invariants, leases, revisions and trust limits |
 | [Recovery runbook](docs/FAILURE_AND_RECOVERY.md) | Isolated setup, exact durable demo and failure diagnosis |
 | [Durability interview lab](docs/labs/PHASE1A2_INTERVIEW_LAB.md) | No-AI crash/replay, late evidence and restore assessment |
@@ -62,6 +69,7 @@ After the setup above, follow the [local setup and recovery runbook](docs/FAILUR
 
 ```powershell
 .venv\Scripts\python.exe scripts/local_postgres.py start
+.venv\Scripts\python.exe -m cloudsecops_live workspace roles-setup --maintenance-config .tools/private/local-postgres.json
 .venv\Scripts\python.exe -m cloudsecops_live db-migrate
 .venv\Scripts\python.exe -m cloudsecops_live db-ingest --checkpoint demo-1 fixtures/synthetic/inventory-burst.json.gz
 .venv\Scripts\python.exe -m cloudsecops_live db-work --limit 64
@@ -74,6 +82,6 @@ Expect one synthetic candidate and one unreviewed draft case. Reimport the same 
 
 ## Next boundary
 
-Phase 1A-3 should address separately authorized local analyst access and human review contracts. FastAPI, analyst login/UI, human approvals/closure, Wazuh, live AWS collection, signed-digest authentication, response and AI remain future work. This Phase 1A-2 PR remains unmerged.
+Phase 1A-3B requires separate authorization for evidence-bound recommendations, distinct reviewer decisions, an independently restricted verifier and guarded closure. This workspace implements none of those authorities. Live AWS collection, signed-digest authentication, Wazuh, response, public deployment and AI remain unimplemented. Synthetic evidence is unauthenticated; cases remain unreviewed. Two users operated by one person do not establish independent authority.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

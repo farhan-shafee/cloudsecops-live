@@ -4,14 +4,21 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cloudsecops-live"
-version = "0.2.0"
-description = "Offline synthetic CloudTrail evidence parsing and candidate detection"
+version = "0.3.0"
+description = "Local authenticated investigation workspace over synthetic security evidence"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Farhan Shafee" }]
-dependencies = ["psycopg[binary]==3.3.7"]
+dependencies = [
+  "psycopg[binary]==3.3.7",
+  "fastapi==0.162.0",
+  "uvicorn==0.54.0",
+  "argon2-cffi==25.1.0",
+  "Jinja2==3.1.6",
+  "cryptography==50.0.2",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3 :: Only",

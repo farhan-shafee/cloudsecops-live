@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block content %}<main><h2>Investigation {{ case.case_id }}</h2>
+<p>Status: {{ case.status }}. Displayed revision {{ case.revision }}; current revision {{ case.current_revision }}.</p>
+<h3>Detection rationale</h3><p>{{ case.payload.rationale }}</p>
+<p>Rule {{ case.payload.rule_id }} version {{ case.payload.rule_version }}; ATT&amp;CK {{ case.payload.attack.technique_id }} — {{ case.payload.attack.name }}.</p>
+<p>Finding <a href="/cases/{{ case.case_id }}/findings/{{ case.payload.finding_id }}?revision={{ case.revision }}">{{ case.payload.finding_id }}</a>; {{ case.payload.count }} events from {{ case.payload.window_start }} to {{ case.payload.window_end }}.</p>
+<h3>Benign explanations, uncertainty and visibility</h3><ul>{% for item in case.payload.limitations %}<li>{{ item }}</li>{% endfor %}</ul>
+<p>Stored derivative inspection does not perform fresh raw-evidence replay. Legacy NUL-containing originals may be preserved but replay-incompatible.</p>
+<h3>Event timeline</h3><ol>{% for event in case.payload.event_timeline %}<li>{{ event.event_time }} — {{ event.identity.event_id }} — {{ event.record_sha256 }}</li>{% endfor %}</ol>
+<h3>Evidence references</h3><ul>{% for event in case.evidence %}<li><a href="/cases/{{ case.case_id }}/evidence/{{ event.event_key }}/{{ event.record_hash }}?revision={{ case.revision }}">{{ event.event_key }} / {{ event.record_hash }}</a></li>{% endfor %}</ul>
+<h3>Revision history</h3><p>{{ case.history_count }} stored revisions.{% if case.history_truncated %} Showing the newest 100; a known earlier revision remains available by its exact revision route.{% endif %}</p><ul>{% for revision in case.history %}<li><a href="/cases/{{ case.case_id }}/history/{{ revision.revision }}">Revision {{ revision.revision }}</a> — {{ revision.status }}</li>{% endfor %}</ul>
+<h3>Lineage</h3><p>Only assigned related cases are shown; additional lineage may require a new access grant.</p>
+<ul>{% for link in case.get('lineage', []) %}<li><a href="/cases/{{ link.parent_case_id }}">{{ link.parent_case_id }}</a> → <a href="/cases/{{ link.child_case_id }}">{{ link.child_case_id }}</a></li>{% else %}<li>No accessible lineage links.</li>{% endfor %}</ul>
+<h3>Analyst notes</h3><p>{{ case.notes_count }} notes.{% if case.notes_truncated %} Showing the newest 50; older notes remain preserved in the private database.{% endif %}</p><ul>{% for note in case.notes %}<li>{{ note.created_at }} — {{ note.username }} — revision {{ note.revision }}<pre>{{ note.body }}</pre></li>{% else %}<li>No notes.</li>{% endfor %}</ul>
+{% if csrf %}<form action="/cases/{{ case.case_id }}/notes" method="post"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="revision" value="{{ case.revision }}"><input type="hidden" name="fingerprint" value="{{ case.fingerprint }}"><label>Append a note <textarea name="body" required maxlength="4000" rows="6" cols="70"></textarea></label><p><button type="submit">Append unreviewed analyst note</button></p></form>{% endif %}
+</main>{% endblock %}

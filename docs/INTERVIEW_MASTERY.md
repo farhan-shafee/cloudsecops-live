@@ -1,6 +1,10 @@
 # Interview mastery and practical assessment
 
-Status: training plan with Phase 1A-1 and Phase 1A-2 executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; local PostgreSQL integration/recovery tests are separate from live exercises, deployment or AWS actions, which remain unperformed. Passing software tests does not establish human mastery, a complete live platform or production experience.
+Status: training plan with Phase 1A-1, Phase 1A-2 and Phase 1A-3A executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; local PostgreSQL integration/recovery tests are separate from live exercises, deployment or AWS actions, which remain unperformed. Passing software tests does not establish human mastery, a complete live platform or production experience.
+
+## Phase 1A-3A practice now available
+
+Use the [secure-workspace no-AI lab](labs/PHASE1A3A_INTERVIEW_LAB.md) and [actual permission model](architecture/ANALYST_WORKSPACE.md) to demonstrate authentication versus authorization, object grants, password hashing, session revocation, CSRF/XSS/SQL boundaries, TLS/cookies, direct SQL denials and atomic version-bound notes/audit. The lab includes deliberately failing tasks and an independent scoring rubric. Automated security tests do not award C07 approval/verification mastery: those authorities are not implemented. C08 practical assessment remains NOT_RUN until an assessor observes the cold exercises.
 
 ## Phase 1A-2 practice now available
 

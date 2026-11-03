@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block content %}<main><h2>Exact evidence record</h2><a href="/cases/{{ case_id }}/history/{{ revision }}">Back to case revision</a>
+<p>Event key {{ evidence.event_key }}; complete-record hash {{ evidence.record_hash }}.</p>
+<h3>Normalized fields</h3><pre>{{ evidence.normalized }}</pre>
+<h3>Preserved canonical record</h3><pre>{{ evidence.canonical_record }}</pre>
+<h3>Original source references</h3><p>{{ evidence.source_count }} deliveries.{% if evidence.source_count > 50 %} Showing the first 50; remaining references are retained privately.{% endif %}</p>
+<ul>{% for source in evidence.sources %}<li>{{ source.source_ref }} — zero-based record {{ source.record_index }}<br>Compressed-byte SHA-256: {{ source.archive_hash }}<br>Decompressed-content SHA-256: {{ source.content_hash }}</li>{% endfor %}</ul>
+<p>No whole-archive download is exposed: an archive can contain records outside your assigned case.</p></main>{% endblock %}
