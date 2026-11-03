@@ -43,3 +43,35 @@ Residual limitations: the database owner can bypass triggers; the Docker volume 
 CI defines eight jobs: four Windows/Linux validation combinations, two dependency-audit jobs and two required PostgreSQL recovery jobs. Database jobs reject skipped/empty integration suites and retain sanitized receipt/coverage artifacts. Exact remote commit, PR number and observed CI outcomes are reported in the PR and final delivery report; this document does not assert a run that has not yet occurred.
 
 **GO for offline Phase 1A-2 review**, subject to actual remote CI. **NO-GO for live AWS, SIEM, public deployment or response.** Remaining Phase 1A gaps include authenticated analyst/reviewer access, recommendation/version binding, human review/closure and independent verifier integration. A separately authorized Phase 1A-3 can address local analyst/review contracts; nothing here starts it.
+
+## PR #3 P2 remediation
+
+The reviewed PR head accepted decoded NUL strings before canonicalization/normalization. NUL in a
+normalized field then failed PostgreSQL JSONB insertion as a database error rather than a permanent
+source error with durable quarantine. The fix rejects U+0000 throughout the decoded JSON tree as
+`NUL_CHARACTER` and adds that reason to the durable source-error allowlist. A related quarantine
+constraint issue is handled without editing SQL: public `INVALID_UTF8` is stored as
+`INVALID_UNICODE`, because the existing reason constraint permits only letters and underscores.
+
+Before the fix, the new parser/CLI tests produced 19 failures and the real PostgreSQL tests confirmed
+JSONB rejection and CLI exit 75. After the fix, 23 new parser/CLI cases and 13 new integration cases
+pass. Full local validation on both Python 3.12.16 and 3.14.8 passed **283 unit tests plus 11 subtests
+and 74 PostgreSQL integration tests**, without skips. This includes every prior crash/replay and
+backup/restore test. Sanitized receipts are retained at `.tools/receipts/pr3-nul-python312.json` and
+`.tools/receipts/pr3-nul-python314.json`.
+
+Real database assertions compare all 22 tables: malformed-input rejection changes only quarantine
+metadata, preserving existing bytes/history and leaving checkpoints, generations, jobs, findings and
+cases unchanged. A separately labeled controlled validation fault before ingestion commit verifies
+actual SQL rollback followed by committed quarantine; normal NUL rejection occurs before any data
+transaction. Legacy unknown-field/error-message NUL fixtures retain exact bytes/hashes but fail
+closed on verification and later ingestion. This compatibility limitation is explicit in the
+[parser contract](OFFLINE_FOUNDATION.md); historical evidence is never rewritten or deleted.
+
+Ingestion branch coverage is **92.86%**, detection **100%**. Complete-package lines/branches are
+**92.97%/84.46%** on Python 3.14 and **93.24%/84.46%** on 3.12. Persistence branches are 75%,
+worker/outbox 75%, and cases 88.46%. All existing gates and exclusions policy remain unchanged.
+Formatting, linting, strict typing, dependency/secret scans, source/wheel builds and installed-wheel
+checks passed. The installed wheel preserves the literal baseline finding ID and verifies the
+existing NUL-free lab store. All migrations are byte-identical to the reviewed head. Fresh remote
+commit CI and re-review are recorded in PR #3; earlier runs/reviews are not approval of this fix.

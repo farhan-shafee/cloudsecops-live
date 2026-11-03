@@ -72,9 +72,25 @@ compressed [demo archive](../fixtures/synthetic/inventory-burst.json.gz). Do not
 with private account, actor or credential data.
 
 The parser rejects unsupported fixture versions, duplicate JSON keys, nonfinite numbers, invalid
-Unicode/surrogates, malformed JSON, truncated/corrupt gzip and trailing data or additional gzip
+Unicode/surrogates, decoded U+0000 in any JSON key/value, malformed JSON, truncated/corrupt gzip and
+trailing data or additional gzip
 members. Envelope fields cannot grant authority. Unknown record fields are accepted as untrusted
 evidence and retained in the canonical record. A malformed record rejects the whole input.
+
+Decoded NUL is rejected as `NUL_CHARACTER` after strict JSON decoding and before canonicalization or
+normalization, including unknown fields, nested values and object keys. Literal backslash text such
+as `\\u0000` is permitted when it does not decode to NUL. Raw unescaped NUL remains `INVALID_JSON`;
+invalid UTF-8 remains `INVALID_UTF8`. Durable imports quarantine these permanent failures without
+accepting a partial batch or advancing its checkpoint. The existing SQL quarantine reason constraint
+allows only letters/underscores, so `INVALID_UTF8` is stored as `INVALID_UNICODE`; the CLI still
+reports its original `INVALID_UTF8` code. No migration or source bytes are rewritten.
+
+This is an explicit tightening of the accepted input domain. Versions and canonicalization of
+remaining accepted records are unchanged. If an older store contains NUL in an unknown field that
+previously persisted only in bytea, its originals/history remain intact but verification, replay,
+worker processing and later ingestion fail closed with `NUL_CHARACTER`. Do not remove the offending
+record or rewrite its history to force a pass; continued processing needs a separately reviewed
+versioned compatibility design. Ordinary existing NUL-free fixtures/stores retain their identities.
 
 | Limit | Per-file default and hard ceiling |
 | --- | --- |

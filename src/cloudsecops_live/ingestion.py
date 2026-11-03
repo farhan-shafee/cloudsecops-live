@@ -187,6 +187,8 @@ def _check_tree(value: JSONValue, limits: Limits) -> None:
     if isinstance(value, str):
         if len(value) > limits.max_string_length:
             _reject("STRING_LIMIT")
+        if "\x00" in value:
+            _reject("NUL_CHARACTER")
         if any(0xD800 <= ord(char) <= 0xDFFF for char in value):
             _reject("INVALID_UNICODE")
     elif isinstance(value, list):

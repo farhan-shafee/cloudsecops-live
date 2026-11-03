@@ -34,6 +34,7 @@ _SOURCE_ERRORS = {
     "INVALID_JSON",
     "STRING_LIMIT",
     "INVALID_UNICODE",
+    "NUL_CHARACTER",
     "DEPTH_LIMIT",
     "NODE_LIMIT",
     "RECORD_LIMIT",
@@ -269,6 +270,9 @@ def load_logs(conn: Connection[dict[str, Any]]) -> list[ParsedLog]:
 def record_ingestion_error(db: Database, code: str, checkpoint: str) -> None:
     """Bounded quarantine metadata only: fixed reason and hash, never raw input text."""
     safe_code = code if code in _SOURCE_ERRORS else "SOURCE_VALIDATION_FAILURE"
+    # The unchanged migration admits letters/underscores only in quarantine reasons.
+    if safe_code == "INVALID_UTF8":
+        safe_code = "INVALID_UNICODE"
     checkpoint_hash = (
         sha256(checkpoint.encode()).hexdigest() if _valid_label(checkpoint) else "invalid"
     )
