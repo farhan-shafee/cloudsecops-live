@@ -1,4 +1,4 @@
-name: Offline foundation
+name: Offline evidence and recovery
 
 on:
   push:
@@ -48,8 +48,11 @@ jobs:
       - name: Strict types
         run: python -m mypy
       - name: Offline tests with complete line and branch evidence
-        run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-report=term-missing --cov-report=json --cov-report=xml
-      - name: Actual ingestion and detection branch gates
+        # All modules remain in the report, including unexecuted PostgreSQL paths.
+        # Preserve the original foundation line gate and ingestion/detection branch
+        # gates explicitly; new durable coverage is measured in required DB jobs.
+        run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
+      - name: Foundation line and actual ingestion/detection branch gates
         run: python scripts/check_coverage.py
       - name: Secret and private identifier scan (no remote credential verification)
         run: python scripts/check_secrets.py
@@ -61,12 +64,16 @@ jobs:
           $wheelPython = if ($IsWindows) { '.wheel-venv/Scripts/python.exe' } else { '.wheel-venv/bin/python' }
           $wheel = @(Get-ChildItem -LiteralPath dist -Filter '*.whl')
           if ($wheel.Count -ne 1) { throw 'Expected exactly one wheel' }
+          & $wheelPython -m pip install --require-hashes --only-binary=:all: -r requirements-runtime.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $wheelPython -m pip install --no-deps --no-index $wheel[0].FullName
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $wheelPython -I -m cloudsecops_live --help
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $wheelCli = if ($IsWindows) { '.wheel-venv/Scripts/cloudsecops-live.exe' } else { '.wheel-venv/bin/cloudsecops-live' }
           & $wheelCli --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $wheelPython -I -c "from importlib.resources import files; from cloudsecops_live.database import Database; assert files('cloudsecops_live').joinpath('sql/001_initial.sql').is_file()"
       - name: Retain sanitized coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -75,6 +82,65 @@ jobs:
           path: |
             coverage.json
             coverage.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  postgres-integration:
+    name: PostgreSQL recovery (py${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    services:
+      postgres:
+        # Docker Official Image PostgreSQL17.11; reviewed manifest 2026-11-03.
+        image: postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+        env:
+          POSTGRES_USER: cloudsecops_ci
+          POSTGRES_DB: cloudsecops_lab
+          # Disposable test-only credentials, scoped to this ephemeral runner.
+          POSTGRES_PASSWORD: csl-disposable-${{ github.run_id }} # pragma: allowlist secret - disposable CI fixture, no real credential
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        ports:
+          - "127.0.0.1:5432:5432"
+        options: >-
+          --memory=512m --cpus=1 --pids-limit=128
+          --health-cmd="pg_isready -h 127.0.0.1 -U cloudsecops_ci -d cloudsecops_lab"
+          --health-interval=2s --health-timeout=3s --health-retries=30
+    env:
+      CSL_TEST_DSN: postgresql://cloudsecops_ci:csl-disposable-${{ github.run_id }}@127.0.0.1:5432/cloudsecops_lab?connect_timeout=5
+      CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: ${{ matrix.python }}
+          check-latest: false
+      - name: Install hash-locked tools and package
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install --no-deps --no-build-isolation -e .
+      - name: Existing regressions with all-source coverage
+        run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-fail-under=0 --cov-report=
+      - name: Required migrations, concurrency, process crashes, replay and backup restore
+        run: python scripts/run_integration.py --receipt .tools/ci-receipts/postgres-py${{ matrix.python }}.json -- --cov=cloudsecops_live --cov-append --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
+      - name: Preserve foundation gates and report persistence, worker and case coverage
+        run: python scripts/check_coverage.py --require-durable
+      - name: Retain sanitized database test and coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: postgres-recovery-py${{ matrix.python }}
+          path: |
+            coverage.json
+            coverage.xml
+            .tools/ci-receipts/*.json
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
 

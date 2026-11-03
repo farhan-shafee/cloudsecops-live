@@ -1,0 +1,3 @@
+# Local PostgreSQL runtime driver; parsing/detection remain standard-library code.
+# Psycopg LGPL-3.0-only, retained as a separately licensed dependency.
+psycopg[binary]==3.3.7

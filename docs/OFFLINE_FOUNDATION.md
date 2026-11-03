@@ -2,11 +2,12 @@
 
 This milestone implements a local Python package that reads explicitly synthetic gzip fixtures,
 preserves evidence bytes, normalizes records and reports reproducible inventory-burst candidates.
-The application runtime uses only the Python standard library. Development, build and checking tools
-are separate, pinned dependencies in `requirements-dev.lock`.
+The original parsing/detection code uses only the Python standard library. Phase 1A-2 adds the pinned
+Psycopg driver for explicit `db-*` commands; see [persistence contracts](architecture/PERSISTENCE_CONTRACTS.md).
+Development, build and checking tools are pinned in `requirements-dev.lock`.
 
-The runtime makes no network calls and authenticates no AWS source. It does not configure credentials,
-collect CloudTrail, validate signed digests, provision infrastructure, persist cases, connect Wazuh,
+The standalone import/detection commands make no network calls and authenticate no AWS source.
+They do not collect CloudTrail, validate signed digests, provision infrastructure, persist cases, connect Wazuh,
 provide an API/UI or perform response actions. A successful import demonstrates software behavior on
 the supplied fixture. It does not establish that AWS activity occurred or that a compromise happened.
 
