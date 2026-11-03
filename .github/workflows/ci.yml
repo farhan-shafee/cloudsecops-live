@@ -111,7 +111,6 @@ jobs:
           --health-interval=2s --health-timeout=3s --health-retries=30
     env:
       CSL_TEST_DSN: postgresql://cloudsecops_ci:csl-disposable-${{ github.run_id }}@127.0.0.1:5432/cloudsecops_lab?connect_timeout=5
-      CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -128,6 +127,8 @@ jobs:
       - name: Existing regressions with all-source coverage
         run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-fail-under=0 --cov-report=
       - name: Required migrations, concurrency, process crashes, replay and backup restore
+        env:
+          CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: python scripts/run_integration.py --receipt .tools/ci-receipts/postgres-py${{ matrix.python }}.json -- --cov=cloudsecops_live --cov-append --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Preserve foundation gates and report persistence, worker and case coverage
         run: python scripts/check_coverage.py --require-durable

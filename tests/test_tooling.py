@@ -44,6 +44,13 @@ def test_scanner_io_warning_is_failure_not_a_clean_scan(tmp_path: Path, capsys: 
 def test_workflow_can_be_loaded_as_yaml_with_executable_string_steps() -> None:
     document = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     assert set(document["jobs"]) == {"validate", "dependency-audit", "postgres-integration"}
+    # GitHub's job context is available to step env, not jobs.<job_id>.env.
+    postgres = document["jobs"]["postgres-integration"]
+    assert "job.services" not in json.dumps(postgres.get("env", {}))
+    recovery = next(
+        step for step in postgres["steps"] if "scripts/run_integration.py" in step.get("run", "")
+    )
+    assert recovery["env"]["CSL_POSTGRES_CONTAINER"] == "${{ job.services.postgres.id }}"
     for job in document["jobs"].values():
         for step in job["steps"]:
             if "run" in step:
