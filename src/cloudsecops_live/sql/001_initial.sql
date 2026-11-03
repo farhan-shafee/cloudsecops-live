@@ -174,4 +174,3 @@ DO $$ DECLARE tab text; BEGIN
  EXECUTE format('CREATE TRIGGER immutable_history BEFORE UPDATE OR DELETE ON csl.%I FOR EACH ROW EXECUTE FUNCTION csl.reject_mutation()', tab);
  END LOOP;
 END $$;
-

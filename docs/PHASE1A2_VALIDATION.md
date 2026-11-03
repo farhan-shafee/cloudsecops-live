@@ -30,6 +30,8 @@ Formatting, linting, strict package typing, dependency audit, secret/identifier 
 
 Private database dumps and credentials are not committed. Test databases and the project volume are retained; destructive cleanup needs explicit scope. These tests do not establish host power-loss, storage-device, cross-host disaster recovery or production availability guarantees.
 
+Before publication, migration source newlines were normalized to the exact Git artifact and fresh-database integration tests rerun. The earlier three-event demo database was preserved under a project archive name; no database or volume was deleted. This avoids silently rewriting a previously stored migration checksum.
+
 ## Independent security review
 
 All five material findings were fixed and re-reviewed: unsafe administrative libpq routing; remote Docker routing/default-context inheritance; incomplete reciprocal case/lineage recovery validation; acknowledgment loss on the outbox's final attempt; and CLI parsing bypassing durable quarantine metadata. Regression tests cover each.
