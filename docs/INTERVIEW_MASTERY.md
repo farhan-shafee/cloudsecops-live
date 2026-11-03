@@ -1,12 +1,16 @@
 # Interview mastery and practical assessment
 
-Status: training plan with Phase 1A-1 executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; no live exercise, integration, deployment or AWS action has been performed. Passing software tests does not establish human mastery, a complete live platform or production experience.
+Status: training plan with Phase 1A-1 and Phase 1A-2 executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; local PostgreSQL integration/recovery tests are separate from live exercises, deployment or AWS actions, which remain unperformed. Passing software tests does not establish human mastery, a complete live platform or production experience.
+
+## Phase 1A-2 practice now available
+
+Use the [durability and recovery lab](labs/PHASE1A2_INTERVIEW_LAB.md) to explain transactions, full-record conflicts, idempotency, lease fencing, outbox limits and late evidence. Perform crash diagnosis, a fresh restore and an independent test change without AI. The measurable 20-point rubric does not award any capability score until observed; every human assessment remains NOT_RUN.
 
 ## Phase 1A-1 practice now available
 
 Use the [30-minute no-AI lab](labs/PHASE1A1_INTERVIEW_LAB.md) with the implemented [offline parser/detector](OFFLINE_FOUNDATION.md). Explain exact hash domains, complete-source conflicts, full credential-session keys and inclusive 60-second windows; troubleshoot an injected duplicate/read-only error; write an independent negative test and demonstrate that it catches its intended bug.
 
-The automated test suite provides implementation evidence for portions of C02/C03/C09, including malicious-input rejection and reproducible synthetic findings. It does not award any C01–C11 score. Until independently assessed, every human capability/panel below remains NOT_RUN. C04 SIEM, live source authenticity, persistent cases/reviews, response and optional AI remain future work.
+The automated test suite provides implementation evidence for portions of C02/C03/C09, including malicious-input rejection and reproducible synthetic findings. It does not award any C01–C11 score. Until independently assessed, every human capability/panel below remains NOT_RUN. C04 SIEM, live source authenticity, human-reviewed cases, response and optional AI remain future work. Persistent unreviewed synthetic drafts are now available.
 
 Use the [system design](architecture/SYSTEM_DESIGN.md), [threat model](architecture/THREAT_MODEL.md), [cost and safety plan](architecture/CLOUD_COST_AND_SAFETY.md) and [delivery roadmap](DELIVERY_ROADMAP.md) as the assessment contract. Resolve contradictions before assessing; do not quietly relax acceptance criteria to obtain a pass.
 
@@ -139,4 +143,4 @@ For each attempt record: capability/panel, commit and versions, source class, pr
 
 Current human assessment record: **all eleven capabilities NOT_RUN; all panels NOT_RUN; no earned mastery, live integration or remediation claim.** Phase 1A-1 automated tests are a separate software-validation record. Update human scores only after observed assessment; separate an independent operator's reproduction from two local accounts controlled by the author.
 
-An accurate eventual statement would be: “In an authorized AWS sandbox, I traced three read-only inventory calls through validated CloudTrail evidence, a deterministic rule, Wazuh, a reviewed no-action case and a separate read-only verifier.” Use it only after those receipts exist. Until then say: “I designed the workflow and its acceptance tests; implementation and live validation remain proposed.”
+An accurate eventual statement would be: “In an authorized AWS sandbox, I traced three read-only inventory calls through validated CloudTrail evidence, a deterministic rule, Wazuh, a reviewed no-action case and a separate read-only verifier.” Use it only after those receipts exist. Until then say: “I implemented and tested the offline synthetic evidence, detection, persistence and recovery foundation; live source validation, SIEM and human review remain future work.”

@@ -112,6 +112,11 @@ def _error(code: str, status: int) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0].startswith("db-"):
+        from cloudsecops_live.durable_cli import main as durable_main
+
+        return durable_main(arguments)
     parser = _Parser(description="Offline synthetic CloudTrail evidence; no AWS authentication.")
     parser.add_argument("command", choices=("import-synthetic", "detect-synthetic"))
     parser.add_argument("paths", nargs="+", help="Explicitly synthetic .json.gz fixture files")

@@ -4,17 +4,17 @@ An AWS-first security engineering portfolio and training environment. The intend
 
 **Actual AWS event → trusted ingestion → preserved evidence → tested detection → analyst investigation → reviewed response recommendation → independently verified outcome.**
 
-## Current status: Phase 1A-1 offline foundation
+## Current status: Phase 1A-2 durable offline pipeline
 
 The first executable slice is implemented: **explicitly synthetic CloudTrail-shaped gzip → bounded parsing → preserved compressed/content provenance → normalized events → deterministic inventory-burst candidate findings**.
 
-This is an offline software foundation. It does not authenticate AWS telemetry or implement the full platform. No AWS access, credential configuration, infrastructure provisioning, Wazuh installation, databases, APIs, analyst UI, deployments or response actions occurred in this subphase. Internal SHA-256 values prove consistency within their stated domain, never AWS source authenticity or detection efficacy.
+The foundation now also persists synthetic originals and normalized events in isolated local PostgreSQL, advances transactional checkpoints, runs leased detection jobs, and creates revisioned unreviewed draft cases with an offline test outbox. Restart/replay and backup/restore tests exercise this local boundary. Internal SHA-256 values establish consistency within their stated domain, never AWS source authenticity or detection efficacy.
 
 Phase 0 [PR #1](https://github.com/farhan-shafee/cloudsecops-live/pull/1) was merged only after verifying its exact authorized head, seven-file documentation scope and clean mergeability. No required checks existed; none were represented as passing.
 
 ## Run the synthetic demo
 
-Python 3.12–3.14 is supported; the runtime has no third-party dependencies. Development tools are pinned with transitive hashes. From the repository root on Windows PowerShell:
+Python 3.12 and 3.14 are tested; the supported range is >=3.12,<3.15. Persistence uses the pinned Psycopg driver; parsing and detection remain standard-library code. Development tools are pinned with transitive hashes. From the repository root on Windows PowerShell:
 
 ```powershell
 py -3.14 -m venv .venv
@@ -31,7 +31,7 @@ Expected demo: one `AWS-LAB-001` v1.0 **synthetic candidate**, exactly `demo-001
 ## Implemented boundaries
 
 - Bounded single-member gzip and UTF-8/JSON parsing; strict synthetic envelope; duplicate-key/nonfinite/invalid-Unicode rejection; size, node, nesting, decoded-string, record and numeric limits before tree allocation where applicable.
-- Separate exact archive, decompressed-content and canonical complete-record hashes, immutable references and explicit parser/schema/canonicalization versions. Original bytes remain available in the in-memory result; this is not durable evidence storage.
+- Separate exact archive, decompressed-content and canonical complete-record hashes, immutable references and explicit parser/schema/canonicalization versions. The original standalone commands return in-memory results; the explicit `db-*` commands durably preserve compressed originals and versioned derivatives in PostgreSQL.
 - Full-record deduplication and conflict detection, including unknown fields. Conflicts suppress every finding in the supplied batch and return exit `3`.
 - Exact assumed-role credential-session separation and inclusive 60-second windows. Overlapping qualifying windows sharing evidence merge transitively; disjoint components remain separate.
 - Deterministic JSON, bounded qualification reasons and structured non-sensitive errors. Fixture labels/flags cannot grant verified AWS status.
@@ -43,6 +43,9 @@ The project does not claim production SOC experience, operational incident autho
 
 | Document | Purpose |
 | --- | --- |
+| [Persistence contracts](docs/architecture/PERSISTENCE_CONTRACTS.md) | Database invariants, leases, revisions and trust limits |
+| [Recovery runbook](docs/FAILURE_AND_RECOVERY.md) | Isolated setup, exact durable demo and failure diagnosis |
+| [Durability interview lab](docs/labs/PHASE1A2_INTERVIEW_LAB.md) | No-AI crash/replay, late evidence and restore assessment |
 | [Offline foundation](docs/OFFLINE_FOUNDATION.md) | Executable interfaces, schemas, hash domains, limits, commands and exit codes |
 | [No-AI interview lab](docs/labs/PHASE1A1_INTERVIEW_LAB.md) | Explain the rule, troubleshoot an injected fault and modify a test |
 | [System design](docs/architecture/SYSTEM_DESIGN.md) | Full target architecture, trust boundaries and live vertical slice |
@@ -53,8 +56,24 @@ The project does not claim production SOC experience, operational incident autho
 | [Interview mastery](docs/INTERVIEW_MASTERY.md) | Capability assessment and evidence requirements; no earned mastery claim |
 | [Implementation plan](docs/PHASE1A1_PLAN.md) | Scope, interfaces, decisions and delivery ledger |
 
+## Run the durable demo
+
+After the setup above, follow the [local setup and recovery runbook](docs/FAILURE_AND_RECOVERY.md):
+
+```powershell
+.venv\Scripts\python.exe scripts/local_postgres.py start
+.venv\Scripts\python.exe -m cloudsecops_live db-migrate
+.venv\Scripts\python.exe -m cloudsecops_live db-ingest --checkpoint demo-1 fixtures/synthetic/inventory-burst.json.gz
+.venv\Scripts\python.exe -m cloudsecops_live db-work --limit 64
+.venv\Scripts\python.exe -m cloudsecops_live db-cases
+.venv\Scripts\python.exe -m cloudsecops_live db-deliver --limit 64
+.venv\Scripts\python.exe -m cloudsecops_live db-verify
+```
+
+Expect one synthetic candidate and one unreviewed draft case. Reimport the same checkpoint without creating another delivery or revision. `db-deliver` records only an offline local test acknowledgment. The runbook explains pending work, exit codes, resource limits, retained test databases and recovery verification.
+
 ## Next boundary
 
-Phase 1A-2 should add offline durable evidence/job/case contracts and persistence under a separately approved scope. PostgreSQL, FastAPI, Wazuh, live AWS ingestion, signed-digest validation, human-approved response and optional AI remain future work. This PR must remain unmerged until reviewed.
+Phase 1A-3 should address separately authorized local analyst access and human review contracts. FastAPI, analyst login/UI, human approvals/closure, Wazuh, live AWS collection, signed-digest authentication, response and AI remain future work. This Phase 1A-2 PR remains unmerged.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

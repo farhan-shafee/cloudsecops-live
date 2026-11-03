@@ -1,9 +1,17 @@
 # Delivery roadmap
 
-Status: Phase 0 target roadmap with Phase 1A-1 offline progress recorded below, 2026-11-03. Later work remains gated.
+Status: target roadmap with Phase 1A-1 and Phase 1A-2 offline progress recorded below, 2026-11-03. Later work remains gated.
 Read with the [system design](architecture/SYSTEM_DESIGN.md), [threat model](architecture/THREAT_MODEL.md), [cost and safety plan](architecture/CLOUD_COST_AND_SAFETY.md), and [reuse audit](architecture/REUSE_AUDIT.md).
-Only the offline parser/detector/CLI subphase is implemented. No live AWS, SIEM, case workflow or complete Phase 1 acceptance is claimed.
+Offline parsing/detection and durable PostgreSQL evidence/jobs/unreviewed draft cases are implemented. No live AWS, SIEM, human review/closure workflow or complete Phase 1 acceptance is claimed.
 Local Phase 0 document validation is recorded below. Remote branch/PR delivery and available check status are reported separately in the PR and delivery report.
+
+## Phase 1A-2 checkpoint
+
+The owner authorized conditional PR #2 merge and offline PostgreSQL development/testing. Exact head `d70f5c64e3bc38692fefc2dbffb08eef97da7649`, all 35 reviewed files, six successful CI jobs, clean worktree/mergeability and absence of blocking reviews were verified. Normal merge `fee9da54bb4be5db44009441cdc887571a695459` retains the exact reviewed tree. Work proceeds on `codex/phase1a2-durable-evidence-recovery`.
+
+Implemented scope: local PostgreSQL compressed originals and immutable versioned variants, full-identity uniqueness, delivery references, bounded quarantine, atomic batches/checkpoints, fenced finite jobs, deterministic persisted findings, revisioned unreviewed cases/lineage, offline outbox and integrity verification. See [persistence contracts](architecture/PERSISTENCE_CONTRACTS.md), [recovery commands](FAILURE_AND_RECOVERY.md) and [Phase 1A-2 lab](labs/PHASE1A2_INTERVIEW_LAB.md). Actual counts, coverage and exact remote CI outcomes belong to the execution receipts and PR delivery report.
+
+Remaining Phase 1A gaps: analyst authentication/authorization, distinct human review and closure, recommendation/version binding, independent verifier service and complete application integration. Remaining live gates include authentic AWS collection/signed-digest binding and actual SIEM query receipts. These are not supplied by synthetic persistence tests. Recommended next scope is a separately authorized local analyst/review milestone; no automatic progression.
 
 ## Delivery rules and owner decisions
 

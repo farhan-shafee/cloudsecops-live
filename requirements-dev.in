@@ -1,4 +1,4 @@
-# Development/build tools only; application runtime has no dependencies.
+# Development/build tools and pinned application driver.
 # PyPI metadata/licenses and pip-audit reviewed 2026-11-03. Tool distributions
 # retain their own MIT/Apache/BSD/PSF/MPL licenses; project MIT covers original code.
 # Regenerate with uv==0.13.7:
@@ -15,3 +15,4 @@ pip-audit==2.10.1
 detect-secrets==1.5.0
 pip==26.3
 pyyaml==6.0.3  # Workflow syntax regression checks; also pinned transitively.
+psycopg[binary]==3.3.7  # LGPL-3.0-only; separate dependency license, not project MIT.

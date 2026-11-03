@@ -1,6 +1,6 @@
 # Threat model
 
-Status: target threat model, 2026-11-03. Phase 1A-1 tests only the [offline parsing/detection subset](../OFFLINE_FOUNDATION.md). Live-source, authorization, storage and response controls remain requirements. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
+Status: target threat model, 2026-11-03. Phase 1A-1 covers [offline parsing/detection](../OFFLINE_FOUNDATION.md); Phase 1A-2 adds [local persistence and recovery controls](PERSISTENCE_CONTRACTS.md). Live-source, human authorization and response controls remain requirements. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
 
 ## Assets, actors and scope
 
@@ -43,3 +43,16 @@ Trust zones: AWS control plane, source archive, collector/parser, database/API, 
 Offline parser/detector tests verify bounded inputs, synthetic trust restrictions, complete-record conflicts and session separation. They do not verify the live-source, approval, durable-audit or response invariants. Host protection, disk encryption, backup security and account ownership require operator confirmation. High availability, enterprise identity, organization-wide SCPs, multi-tenancy, off-account immutable evidence and independent institutional reviewers are outside initial scope. Re-review the threat model before any deployment depends on them.
 
 The first live gate requires hostile-input, source-spoofing, approval-replay, evidence-drift, crash-recovery and cost-bound reviews. Mutation gates additionally require action-policy and independent-verification tests. Keep raw acceptance receipts private and publish sanitized summaries only.
+
+
+## Phase 1A-2 database and worker risks
+
+New trust boundary: hostile synthetic input enters an isolated loopback PostgreSQL lab through the bounded parser. Bytea originals and derivatives commit together; database uniqueness/FKs/version and synthetic-only checks prevent routine identity/trust drift. Full-record conflicts and new evidence mark prior conclusions pending before acknowledgment. No database flag or caller field grants AWS authenticity.
+
+Worker races use a locked generation, SKIP LOCKED claims, database-clock leases, finite attempts and claim-token fencing. Cases append revisions and bridge lineage; stale optimistic revisions fail. The offline outbox records local receipts separately from SIEM visibility and reconciles committed receipts after acknowledgment loss, including the final attempt.
+
+Recovery verification checks raw/normalized hashes, all source references, supporting findings, reciprocal case coverage, revisions, event timelines, lineage and outbox receipts. Independent negative tests remove or corrupt these artifacts. Genuine process termination and database-session interruption complement controlled exceptions; they do not demonstrate disk/power-loss or HA resilience.
+
+Resource controls bound compressed/expanded bytes, records, raw objects, batches, quarantine errors, leases and attempts. Docker has project-specific names, loopback publication, CPU/memory/PID limits and generated ignored credentials; ambient remote Docker/libpq routing is rejected. Test databases are retained until explicitly scoped cleanup, so repeat runs consume disk. Ordinary Docker volumes have no portable hard disk quota.
+
+Residual risks: the local owner/admin can bypass triggers or edit storage, shared-host compromise remains possible, private credentials/dumps require OS protection, and PostgreSQL storage/WAL may exceed evidence-byte limits. No authenticated analyst roles, independent review/closure, external SIEM receipt, live-source authenticity, power-loss guarantee or production operational efficacy is claimed. See [persistence contracts](PERSISTENCE_CONTRACTS.md) and [recovery runbook](../FAILURE_AND_RECOVERY.md).

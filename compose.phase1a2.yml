@@ -1,0 +1,69 @@
+# Reviewed 2026-11-03: Docker Official Image, PostgreSQL 17.11 / Alpine 3.24.
+# Manifest source: docker-library/postgres@2603e26e245e558218728ee14e0a42dcb020dc7f.
+# This local durable volume has no portable Docker disk quota; application evidence
+# admission limits and the launcher's free-space preflight remain necessary.
+name: cloudsecops-live-phase1a2
+services:
+  postgres:
+    image: postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    restart: "no"
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: cloudsecops_local
+      POSTGRES_DB: cloudsecops_lab
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - postgres_password
+    volumes:
+      - evidence:/var/lib/postgresql/data
+    networks:
+      - private
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    shm_size: 64m
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - postgres
+      - -c
+      - max_connections=24
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=16MB
+      - -c
+      - temp_file_limit=64MB
+      - -c
+      - max_wal_size=128MB
+      - -c
+      - min_wal_size=80MB
+      - -c
+      - password_encryption=scram-sha-256
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cloudsecops_local -d cloudsecops_lab"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 2m
+        max-file: "2"
+secrets:
+  postgres_password:
+    file: .tools/private/postgres-password
+volumes:
+  evidence:
+    name: cloudsecops-live-phase1a2-evidence
+networks:
+  private:
+    # An internal=true bridge suppresses published ports on Docker29. No external
+    # services are called; the explicit port binding limits host access to loopback.
+    name: cloudsecops-live-phase1a2-loopback
