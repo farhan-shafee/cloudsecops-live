@@ -93,7 +93,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install hash-locked audit tool
-        run: python -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
       # Advisory network access only; outages/errors and findings fail this job.
       - name: Audit every pinned development/build dependency
         run: python -m pip_audit --require-hashes --disable-pip -r requirements-dev.lock --strict --progress-spinner off

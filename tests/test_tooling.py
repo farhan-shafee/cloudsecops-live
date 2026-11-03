@@ -6,7 +6,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_workflow_can_be_loaded_as_yaml_with_executable_string_steps() -> None:
+    document = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    assert set(document["jobs"]) == {"validate", "dependency-audit"}
+    for job in document["jobs"].values():
+        for step in job["steps"]:
+            if "run" in step:
+                assert isinstance(step["run"], str) and step["run"].strip()
 
 
 def test_compressed_fixture_secrets_and_accounts_cannot_bypass_scan(tmp_path: Path) -> None:
