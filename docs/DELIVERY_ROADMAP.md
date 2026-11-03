@@ -1,18 +1,30 @@
 # Delivery roadmap
 
-Status: Phase 0 proposal, 2026-11-03. This file proposes implementation work; it does not authorize it.
+Status: Phase 0 target roadmap with Phase 1A-1 offline progress recorded below, 2026-11-03. Later work remains gated.
 Read with the [system design](architecture/SYSTEM_DESIGN.md), [threat model](architecture/THREAT_MODEL.md), [cost and safety plan](architecture/CLOUD_COST_AND_SAFETY.md), and [reuse audit](architecture/REUSE_AUDIT.md).
-No runtime, AWS deployment, SIEM integration, or successful acceptance test is claimed here.
+Only the offline parser/detector/CLI subphase is implemented. No live AWS, SIEM, case workflow or complete Phase 1 acceptance is claimed.
 Local Phase 0 document validation is recorded below. Remote branch/PR delivery and available check status are reported separately in the PR and delivery report.
 
 ## Delivery rules and owner decisions
 
-Work stops after Phase 0 documentation and the review PR. Do not merge, configure credentials, apply Terraform, enable paid services, or start Phase 1 in this phase.
-Owner approval of this roadmap must explicitly identify which later subgate may begin. Offline implementation approval and live cloud/apply approval are separate decisions; neither is currently granted.
+### Phase 1A-1 checkpoint
+
+The owner explicitly authorized original-code MIT licensing, the conditional Phase 0 merge, and offline Phase 1A-1 implementation. PR #1's reviewed head `db23de05862535ecfce8ac616a7adcc74aafa3e8`, seven-file scope and clean mergeability were verified; merge commit `25b7aad40b218a8de96014b9c3fe9bd628a53bd1` has the identical reviewed tree. No checks existed and none were asserted passing.
+
+Implemented: standard-library Python package, strict bounded synthetic gzip/JSON import, separate hash domains, immutable versioned normalized records, complete-record duplicate/conflict handling, exact-session `AWS-LAB-001`, deterministic JSON/CLI, independent adversarial tests, pinned tooling/CI and original-code MIT license. Read the [offline guide](OFFLINE_FOUNDATION.md), [implementation plan](PHASE1A1_PLAN.md) and [practical lab](labs/PHASE1A1_INTERVIEW_LAB.md). Human mastery remains unassessed.
+
+Executed local Windows Python 3.14 validation passes 197 tests; ingestion actual branch coverage 90.96%, detection 100%, package lines 96.44% (combined line/branch 95.19%), with no exclusions. Python 3.12 independently passes the same 197 tests and branch gates (96.73% package lines, 95.47% combined). Format/lint/strict typing, secret scan including compressed fixtures, locked installation, strict dependency audit, build and isolated installed-wheel demo pass. Final remote CI and publication identities will be recorded in the Phase 1A-1 PR/delivery report; a workflow definition alone is not a successful run.
+
+This completes only a subset of Phase 1A. It does not complete the earlier durable database/job/case/reviewer/verifier/UI gates or prove AWS authenticity. No AWS access, credentials, provisioning, Wazuh, PostgreSQL, FastAPI, deployment or paid services were enabled. The historical Phase 0 stop rule below describes that phase; this explicit new authorization permits only the stated offline subset. New decisions about cloud account/hardware/spend remain pending before their dependent live gates.
+
+Recommendation for Phase 1A-2: review offline durable-evidence, transaction/job and case/version contracts next, including crash/replay, stale-review invalidation and migration/restore tests. Select the exact persistence scope before implementing it; do not begin it in Phase 1A-1. Live AWS/SIEM/action milestones remain NO-GO without their separate authorizations.
+
+Historical Phase 0 authorization record: work stopped at its documentation/review PR without merge, credentials, apply, paid services or Phase 1 work. At that time offline and live approvals were separate and neither had been granted. The new explicit authorization above subsequently permits the verified merge and Phase 1A-1 offline subset only.
+Any further authorization must identify the permitted subgate. Offline implementation approval and live cloud/apply approval remain separate decisions.
 Passing an offline gate permits consideration of the next gate, not automatic deployment or expenditure.
 Keep private acceptance receipts outside Git; publish only reviewed sanitized summaries with exact source revision, test scope, date, limitations, and remaining work.
 
-Resolve and record these decisions before Phase 1A:
+Resolve the remaining decisions below before their dependent full Phase 1A/live milestones. The original-code MIT license and Phase 1A-1 offline scope are now authorized; this subphase does not depend on an AWS account or Wazuh capacity:
 
 | Decision | Required owner record / stop condition |
 | --- | --- |
@@ -41,7 +53,7 @@ Acceptance criteria:
 
 Executed local validation on 2026-11-03: all seven required Markdown files present, 24 relative links/anchors valid, 75 commit-pinned citations covering 60 unique source paths checked against inspected Git objects or connected GitHub content, balanced code fences, and all 11 mastery capabilities present. Two upstream-only routing files were inspected through connected GitHub. Cost arithmetic recomputed to $0.281, $1.73 and $37.10. A basic secret/account-identifier pattern scan found no matches; diff review checked private-name/context disclosures and scope. All six audited source working trees remained clean. These are document/inspection checks, not execution of source-project tests or a comprehensive secret-scanner attestation.
 
-`git diff --check` passed. Runtime, AWS, SIEM, signature-verification, scanner and mastery tests are NOT RUN; no runtime or CI implementation exists here. Current regional S3 model rates, hardware capacity, effective live IAM and live reproducibility remain unverified. Independent review corrected hash-domain/version-binding and responder-permission caveats before delivery.
+Historical Phase 0 result: `git diff --check` passed; runtime, AWS, SIEM, signature-verification, scanner and mastery tests were NOT_RUN, and no runtime/CI implementation existed at that point. Phase 1A-1 offline validation is recorded in the checkpoint above. Current regional S3 model rates, hardware capacity, effective live IAM and live reproducibility remain unverified. Phase 0 review corrected hash-domain/version-binding and responder-permission caveats before delivery.
 
 Recommendation: **GO for the bounded Phase 1A offline scope after owner approval of the listed decisions; NO-GO for live/apply work until Phase 1B readiness and separate cloud authorization.** This is a recommendation, not permission to begin.
 Stop: submit the review artifact and wait for explicit owner direction. Phase 0 completion is not Phase 1 authorization.

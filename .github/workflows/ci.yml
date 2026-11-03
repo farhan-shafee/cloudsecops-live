@@ -1,0 +1,100 @@
+name: Offline foundation
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+  workflow_dispatch:
+
+# No cloud, PAT, model credentials, OIDC, write permissions or external paid checks.
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  validate:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+        python: ["3.12", "3.14"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Public release refs checked against actions/* GitHub git-ref API.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: ${{ matrix.python }}
+          check-latest: false
+      - name: Install hash-locked tools and local package
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install --no-deps --no-build-isolation -e .
+      - name: Format
+        run: python -m ruff format --check .
+      - name: Lint
+        run: python -m ruff check .
+      - name: Strict types
+        run: python -m mypy
+      - name: Offline tests with complete line and branch evidence
+        run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-report=term-missing --cov-report=json --cov-report=xml
+      - name: Actual ingestion and detection branch gates
+        run: python scripts/check_coverage.py
+      - name: Secret and private identifier scan (no remote credential verification)
+        run: python scripts/check_secrets.py
+      - name: Build with locked backend
+        run: python -m build --no-isolation
+      - name: Install and exercise distributable wheel
+        run: |
+          python -m venv .wheel-venv
+          $wheelPython = if ($IsWindows) { '.wheel-venv/Scripts/python.exe' } else { '.wheel-venv/bin/python' }
+          $wheel = @(Get-ChildItem -LiteralPath dist -Filter '*.whl')
+          if ($wheel.Count -ne 1) { throw 'Expected exactly one wheel' }
+          & $wheelPython -m pip install --no-deps --no-index $wheel[0].FullName
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $wheelPython -I -m cloudsecops_live --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $wheelCli = if ($IsWindows) { '.wheel-venv/Scripts/cloudsecops-live.exe' } else { '.wheel-venv/bin/cloudsecops-live' }
+          & $wheelCli --help
+      - name: Retain sanitized coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-${{ matrix.os }}-py${{ matrix.python }}
+          path: |
+            coverage.json
+            coverage.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  dependency-audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+      - name: Install hash-locked audit tool
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
+      # Advisory network access only; outages/errors and findings fail this job.
+      - name: Audit every pinned development/build dependency
+        run: python -m pip_audit --require-hashes --disable-pip -r requirements-dev.lock --strict --progress-spinner off

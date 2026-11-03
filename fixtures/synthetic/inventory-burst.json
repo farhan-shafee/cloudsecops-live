@@ -1,0 +1,108 @@
+{
+  "fixture_schema_version": "1.0",
+  "source_kind": "synthetic",
+  "Records": [
+    {
+      "eventVersion": "1.11",
+      "eventID": "demo-001",
+      "eventTime": "2026-01-01T00:00:00Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "recipientAccountId": "LABACCOUNT_A",
+      "eventCategory": "Management",
+      "eventType": "AwsApiCall",
+      "readOnly": true,
+      "requestParameters": {},
+      "responseElements": null,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "SYNTHETIC_ROLE_A:lab-session",
+        "arn": "arn:aws:sts::LABACCOUNT_A:assumed-role/InventoryLab/lab-session",
+        "accountId": "LABACCOUNT_A",
+        "accessKeyId": "SYNTHETIC_KEY_A",
+        "sessionContext": {
+          "sessionIssuer": {
+            "type": "Role",
+            "principalId": "SYNTHETIC_ROLE_A",
+            "arn": "arn:aws:iam::LABACCOUNT_A:role/InventoryLab",
+            "accountId": "LABACCOUNT_A",
+            "userName": "InventoryLab"
+          },
+          "attributes": {
+            "creationDate": "2025-12-31T23:00:00Z",
+            "mfaAuthenticated": "false"
+          }
+        }
+      }
+    },
+    {
+      "eventVersion": "1.11",
+      "eventID": "demo-002",
+      "eventTime": "2026-01-01T00:00:30Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "recipientAccountId": "LABACCOUNT_A",
+      "eventCategory": "Management",
+      "eventType": "AwsApiCall",
+      "readOnly": true,
+      "requestParameters": {},
+      "responseElements": null,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "SYNTHETIC_ROLE_A:lab-session",
+        "arn": "arn:aws:sts::LABACCOUNT_A:assumed-role/InventoryLab/lab-session",
+        "accountId": "LABACCOUNT_A",
+        "accessKeyId": "SYNTHETIC_KEY_A",
+        "sessionContext": {
+          "sessionIssuer": {
+            "type": "Role",
+            "principalId": "SYNTHETIC_ROLE_A",
+            "arn": "arn:aws:iam::LABACCOUNT_A:role/InventoryLab",
+            "accountId": "LABACCOUNT_A",
+            "userName": "InventoryLab"
+          },
+          "attributes": {
+            "creationDate": "2025-12-31T23:00:00Z",
+            "mfaAuthenticated": "false"
+          }
+        }
+      }
+    },
+    {
+      "eventVersion": "1.11",
+      "eventID": "demo-003",
+      "eventTime": "2026-01-01T00:01:00Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "recipientAccountId": "LABACCOUNT_A",
+      "eventCategory": "Management",
+      "eventType": "AwsApiCall",
+      "readOnly": true,
+      "requestParameters": {},
+      "responseElements": null,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "SYNTHETIC_ROLE_A:lab-session",
+        "arn": "arn:aws:sts::LABACCOUNT_A:assumed-role/InventoryLab/lab-session",
+        "accountId": "LABACCOUNT_A",
+        "accessKeyId": "SYNTHETIC_KEY_A",
+        "sessionContext": {
+          "sessionIssuer": {
+            "type": "Role",
+            "principalId": "SYNTHETIC_ROLE_A",
+            "arn": "arn:aws:iam::LABACCOUNT_A:role/InventoryLab",
+            "accountId": "LABACCOUNT_A",
+            "userName": "InventoryLab"
+          },
+          "attributes": {
+            "creationDate": "2025-12-31T23:00:00Z",
+            "mfaAuthenticated": "false"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,45 +1,60 @@
 # CloudSecOps Live
 
-An AWS-first security engineering portfolio and training environment, designed around one traceable workflow:
+An AWS-first security engineering portfolio and training environment. The intended full workflow is:
 
 **Actual AWS event → trusted ingestion → preserved evidence → tested detection → analyst investigation → reviewed response recommendation → independently verified outcome.**
 
-## Current status: Phase 0 design review
+## Current status: Phase 1A-1 offline foundation
 
-This repository contains architecture and a read-only reuse audit. **It does not yet contain a working platform.** No AWS resources were provisioned, paid services enabled, credentials configured, integrations activated, or deployments performed for Phase 0. There are no runtime tests or CI workflows in this repository yet.
+The first executable slice is implemented: **explicitly synthetic CloudTrail-shaped gzip → bounded parsing → preserved compressed/content provenance → normalized events → deterministic inventory-burst candidate findings**.
 
-The design targets enterprise engineering practices in a small, independently testable lab. It is not evidence of production SOC experience, detection efficacy against real adversaries, or authority to respond to operational incidents.
+This is an offline software foundation. It does not authenticate AWS telemetry or implement the full platform. No AWS access, credential configuration, infrastructure provisioning, Wazuh installation, databases, APIs, analyst UI, deployments or response actions occurred in this subphase. Internal SHA-256 values prove consistency within their stated domain, never AWS source authenticity or detection efficacy.
 
-## Proposed direction
+Phase 0 [PR #1](https://github.com/farhan-shafee/cloudsecops-live/pull/1) was merged only after verifying its exact authorized head, seven-file documentation scope and clean mergeability. No required checks existed; none were represented as passing.
 
-- Python and FastAPI in one application, with a separate worker process from the same package; PostgreSQL for cases, decisions, jobs and audit records.
-- Terraform for a dedicated AWS sandbox. Initial runtime roles read only; provisioning and teardown use a separate, manually authorized role.
-- CloudTrail management events delivered to private, versioned S3 storage, with raw-file provenance and explicit digest-validation status.
-- Deterministic Python detections and correlation, linked to an analyst case. A local Wazuh deployment supplies a real SIEM integration after its resource gate passes.
-- A small server-rendered investigation workspace first. Next.js is deferred until workflow needs justify a second application.
-- Human review before response decisions; independent verification before closing an investigation. Cloud-changing response and optional AI assistance are later milestones.
+## Run the synthetic demo
 
-These are recommendations for review, not implemented capabilities or approved cloud expenditure.
+Python 3.12–3.14 is supported; the runtime has no third-party dependencies. Development tools are pinned with transitive hashes. From the repository root on Windows PowerShell:
 
-## Design and delivery documents
+```powershell
+py -3.14 -m venv .venv
+.venv\Scripts\python.exe -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
+.venv\Scripts\python.exe -m pip install --no-deps --no-build-isolation -e .
+.venv\Scripts\python.exe -m cloudsecops_live import-synthetic fixtures/synthetic/inventory-burst.json.gz
+.venv\Scripts\python.exe -m cloudsecops_live detect-synthetic fixtures/synthetic/inventory-burst.json.gz
+```
+
+On Linux, use `python3.12 -m venv .venv` and `.venv/bin/python` for subsequent commands. Setup downloads tools; import/detection operate offline. See the [complete command and schema guide](docs/OFFLINE_FOUNDATION.md).
+
+Expected demo: one `AWS-LAB-001` v1.0 **synthetic candidate**, exactly `demo-001`, `demo-002`, `demo-003`, at 0/30/60 seconds, `authenticated=false`, with T1580 context and benign explanations. The [literal expected fixture](fixtures/synthetic/inventory-burst.expected.json) is independent of detector output. A burst alone does not establish malicious activity.
+
+## Implemented boundaries
+
+- Bounded single-member gzip and UTF-8/JSON parsing; strict synthetic envelope; duplicate-key/nonfinite/invalid-Unicode rejection; size, node, nesting, decoded-string, record and numeric limits before tree allocation where applicable.
+- Separate exact archive, decompressed-content and canonical complete-record hashes, immutable references and explicit parser/schema/canonicalization versions. Original bytes remain available in the in-memory result; this is not durable evidence storage.
+- Full-record deduplication and conflict detection, including unknown fields. Conflicts suppress every finding in the supplied batch and return exit `3`.
+- Exact assumed-role credential-session separation and inclusive 60-second windows. Overlapping qualifying windows sharing evidence merge transitively; disjoint components remain separate.
+- Deterministic JSON, bounded qualification reasons and structured non-sensitive errors. Fixture labels/flags cannot grant verified AWS status.
+- Formatting, lint/type checks, adversarial tests, measured line/branch coverage, package build/install checks, dependency audit and secret/identifier scanning including expanded gzip fixtures. Linux/Windows Python 3.12/3.14 workflows are defined; actual run outcomes belong to the PR/check records.
+
+The project does not claim production SOC experience, operational incident authority or real-world detection efficacy. Source-project tests inspected during Phase 0 are separate from tests executed for this implementation. Original project code is [MIT licensed](LICENSE); no upstream code was copied, and tool dependencies retain their own licenses.
+
+## Documentation and training
 
 | Document | Purpose |
 | --- | --- |
-| [System design](docs/architecture/SYSTEM_DESIGN.md) | Architecture, contracts, trust boundaries, stack decisions and first vertical slice |
-| [Reuse audit](docs/architecture/REUSE_AUDIT.md) | Six repository snapshots, source evidence, gaps and license boundaries |
-| [Threat model](docs/architecture/THREAT_MODEL.md) | Abuse cases, controls, failure behavior and residual risk |
-| [Cloud cost and safety](docs/architecture/CLOUD_COST_AND_SAFETY.md) | Cost assumptions, IAM, safe exercises, retention and teardown |
-| [Delivery roadmap](docs/DELIVERY_ROADMAP.md) | Acceptance tests, dependencies and stop/go gates |
-| [Interview mastery](docs/INTERVIEW_MASTERY.md) | Practical exercises and evidence-based assessment |
+| [Offline foundation](docs/OFFLINE_FOUNDATION.md) | Executable interfaces, schemas, hash domains, limits, commands and exit codes |
+| [No-AI interview lab](docs/labs/PHASE1A1_INTERVIEW_LAB.md) | Explain the rule, troubleshoot an injected fault and modify a test |
+| [System design](docs/architecture/SYSTEM_DESIGN.md) | Full target architecture, trust boundaries and live vertical slice |
+| [Reuse audit](docs/architecture/REUSE_AUDIT.md) | Six source snapshots, implementation evidence and license boundaries |
+| [Threat model](docs/architecture/THREAT_MODEL.md) | Abuse cases, controls and residual risks |
+| [Cloud cost and safety](docs/architecture/CLOUD_COST_AND_SAFETY.md) | Future AWS cost model, IAM, retention and teardown gates |
+| [Delivery roadmap](docs/DELIVERY_ROADMAP.md) | Implemented subset and remaining milestone acceptance gates |
+| [Interview mastery](docs/INTERVIEW_MASTERY.md) | Capability assessment and evidence requirements; no earned mastery claim |
+| [Implementation plan](docs/PHASE1A1_PLAN.md) | Scope, interfaces, decisions and delivery ledger |
 
-## First implementation candidate
+## Next boundary
 
-Phase 1 would build one complete workflow: three authorized `DescribeInstances` calls in an isolated account; authenticated collection of their CloudTrail logs; digest-backed evidence; a tested inventory-burst rule; a searchable Wazuh alert and investigation case; human review of a **no-action / authorized exercise** recommendation; and separately recorded read-only verification. No resource needs to be attacked, exposed or remediated to demonstrate this path.
+Phase 1A-2 should add offline durable evidence/job/case contracts and persistence under a separately approved scope. PostgreSQL, FastAPI, Wazuh, live AWS ingestion, signed-digest validation, human-approved response and optional AI remain future work. This PR must remain unmerged until reviewed.
 
-CloudTrail delivery and digest timing make this an eventual, evidence-first workflow, not a real-time response claim. A no-action exercise does not demonstrate containment or remediation; those require later gates.
-
-## Safety and contribution boundary
-
-Do not commit cloud evidence, account identifiers, private names, Terraform state or plans, credentials, tokens, or unsanitized screenshots. Public fixtures must be explicitly synthetic. Source-project tests were inspected during the audit; they were not executed by this Phase 0 review. No source code was copied. This repository has no project license yet; choose one before code reuse or distribution beyond this documentation review.
-
-Phase 0 ends with a review PR against `main`. Phase 1 requires owner approval of the scope and gates in the roadmap. Do not merge or deploy as part of Phase 0.
+Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

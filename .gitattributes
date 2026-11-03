@@ -1,0 +1,3 @@
+# Preserve fixture/source byte contracts across Windows and Linux checkouts.
+* text=auto eol=lf
+*.gz binary

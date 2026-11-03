@@ -1,6 +1,6 @@
 # System design
 
-Status: proposed architecture, 2026-11-03. Nothing described as a runtime capability is implemented here. Read with the [reuse audit](REUSE_AUDIT.md), [threat model](THREAT_MODEL.md), [cost plan](CLOUD_COST_AND_SAFETY.md), and [delivery gates](../DELIVERY_ROADMAP.md).
+Status: full target architecture, 2026-11-03. Phase 1A-1 implements only the [offline synthetic evidence/detection foundation](../OFFLINE_FOUNDATION.md). Live authenticity, storage/services, SIEM, review/response and the complete vertical slice below remain proposed. Read with the [reuse audit](REUSE_AUDIT.md), [threat model](THREAT_MODEL.md), [cost plan](CLOUD_COST_AND_SAFETY.md), and [delivery gates](../DELIVERY_ROADMAP.md).
 
 ## Intent and scope
 

@@ -1,0 +1,21 @@
+{
+  "fixture_schema_version": "1.0",
+  "source_kind": "synthetic",
+  "provenance": "synthetic",
+  "rule_id": "AWS-LAB-001",
+  "rule_version": "1.0",
+  "finding_count": 1,
+  "qualifying_count": 3,
+  "evidence_event_ids": ["demo-001", "demo-002", "demo-003"],
+  "window_start": "2026-01-01T00:00:00Z",
+  "window_end": "2026-01-01T00:01:00Z",
+  "account": "LABACCOUNT_A",
+  "region": "us-east-1",
+  "issuer_arn": "arn:aws:iam::LABACCOUNT_A:role/InventoryLab",
+  "access_key_id": "SYNTHETIC_KEY_A",
+  "creation_time": "2025-12-31T23:00:00Z",
+  "limitations": [
+    "Synthetic fixtures demonstrate software behavior only.",
+    "This candidate is not authenticated AWS telemetry or a compromise verdict."
+  ]
+}
