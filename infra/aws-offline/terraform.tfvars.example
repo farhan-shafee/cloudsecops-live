@@ -1,0 +1,8 @@
+# Placeholder-only example; never replace values in this tracked file.
+account_id = "REPLACE_PRIVATELY"
+archive_bucket_name = "REPLACE_PRIVATELY"
+provisioner_role_arn = "REPLACE_PRIVATELY"
+cleanup_role_arn = "REPLACE_PRIVATELY"
+collector_trusted_role_arn = "REPLACE_PRIVATELY"
+verifier_trusted_role_arn = "REPLACE_PRIVATELY"
+test_actor_trusted_role_arn = "REPLACE_PRIVATELY"

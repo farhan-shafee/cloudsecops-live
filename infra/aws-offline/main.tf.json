@@ -1,0 +1,739 @@
+{
+  "terraform": {
+    "required_version": ">= 1.9.0, < 2.0.0",
+    "required_providers": {
+      "aws": {
+        "source": "hashicorp/aws",
+        "version": "= 6.71.0"
+      }
+    }
+  },
+  "provider": {
+    "aws": {
+      "region": "us-east-1",
+      "allowed_account_ids": [
+        "${var.account_id}"
+      ],
+      "assume_role": [
+        {
+          "role_arn": "${var.provisioner_role_arn}",
+          "session_name": "cloudsecops-reviewed-provisioning"
+        }
+      ],
+      "default_tags": {
+        "tags": {
+          "Project": "cloudsecops-live",
+          "Environment": "sandbox",
+          "ManagedBy": "terraform"
+        }
+      }
+    }
+  },
+  "variable": {
+    "account_id": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^[0-9]{12}$\", var.account_id))}",
+          "error_message": "Supply the expected sandbox account privately."
+        }
+      ]
+    },
+    "archive_bucket_name": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$\", var.archive_bucket_name))}",
+          "error_message": "Use a private globally unique lowercase bucket name without dots."
+        }
+      ]
+    },
+    "provisioner_role_arn": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$\", var.provisioner_role_arn)) && startswith(var.provisioner_role_arn, \"arn:aws:iam::${var.account_id}:role/\")}",
+          "error_message": "Use one exact existing role in the private expected sandbox account."
+        }
+      ]
+    },
+    "cleanup_role_arn": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$\", var.cleanup_role_arn)) && startswith(var.cleanup_role_arn, \"arn:aws:iam::${var.account_id}:role/\")}",
+          "error_message": "Use one exact existing role in the private expected sandbox account."
+        },
+        {
+          "condition": "${length(distinct([var.provisioner_role_arn, var.cleanup_role_arn, var.collector_trusted_role_arn, var.verifier_trusted_role_arn, var.test_actor_trusted_role_arn])) == 5}",
+          "error_message": "Provisioner, cleanup and the three trusted roles must all be distinct."
+        },
+        {
+          "condition": "${alltrue([for arn in [var.provisioner_role_arn, var.cleanup_role_arn, var.collector_trusted_role_arn, var.verifier_trusted_role_arn, var.test_actor_trusted_role_arn] : !contains(local.managed_role_arns, arn)])}",
+          "error_message": "Runtime roles cannot be provisioning, cleanup or trusted operator roles."
+        }
+      ]
+    },
+    "collector_trusted_role_arn": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$\", var.collector_trusted_role_arn)) && startswith(var.collector_trusted_role_arn, \"arn:aws:iam::${var.account_id}:role/\")}",
+          "error_message": "Use one exact existing role in the private expected sandbox account."
+        }
+      ]
+    },
+    "verifier_trusted_role_arn": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$\", var.verifier_trusted_role_arn)) && startswith(var.verifier_trusted_role_arn, \"arn:aws:iam::${var.account_id}:role/\")}",
+          "error_message": "Use one exact existing role in the private expected sandbox account."
+        }
+      ]
+    },
+    "test_actor_trusted_role_arn": {
+      "type": "string",
+      "sensitive": true,
+      "nullable": false,
+      "description": "Supply privately; no tracked real identifiers.",
+      "validation": [
+        {
+          "condition": "${can(regex(\"^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$\", var.test_actor_trusted_role_arn)) && startswith(var.test_actor_trusted_role_arn, \"arn:aws:iam::${var.account_id}:role/\")}",
+          "error_message": "Use one exact existing role in the private expected sandbox account."
+        }
+      ]
+    }
+  },
+  "locals": {
+    "bucket_arn": "arn:aws:s3:::${var.archive_bucket_name}",
+    "trail_arn": "arn:aws:cloudtrail:us-east-1:${var.account_id}:trail/cloudsecops-sandbox-management",
+    "log_prefix": "evidence/AWSLogs/${var.account_id}/CloudTrail/us-east-1/",
+    "digest_prefix": "evidence/AWSLogs/${var.account_id}/CloudTrail-Digest/us-east-1/",
+    "managed_role_arns": [
+      "arn:aws:iam::${var.account_id}:role/cloudsecops-sandbox/cloudsecops-collector",
+      "arn:aws:iam::${var.account_id}:role/cloudsecops-sandbox/cloudsecops-verifier",
+      "arn:aws:iam::${var.account_id}:role/cloudsecops-sandbox/cloudsecops-test-actor"
+    ],
+    "collector_trust": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ExactExistingTrustedRole",
+          "Effect": "Allow",
+          "Action": [
+            "sts:AssumeRole"
+          ],
+          "Principal": {
+            "AWS": "${var.collector_trusted_role_arn}"
+          }
+        }
+      ]
+    },
+    "verifier_trust": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ExactExistingTrustedRole",
+          "Effect": "Allow",
+          "Action": [
+            "sts:AssumeRole"
+          ],
+          "Principal": {
+            "AWS": "${var.verifier_trusted_role_arn}"
+          }
+        }
+      ]
+    },
+    "test_actor_trust": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ExactExistingTrustedRole",
+          "Effect": "Allow",
+          "Action": [
+            "sts:AssumeRole"
+          ],
+          "Principal": {
+            "AWS": "${var.test_actor_trusted_role_arn}"
+          }
+        }
+      ]
+    },
+    "collector_policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ListEvidencePrefixes",
+          "Effect": "Allow",
+          "Action": [
+            "s3:ListBucket",
+            "s3:ListBucketVersions"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            },
+            "StringLike": {
+              "s3:prefix": [
+                "${local.log_prefix}*",
+                "${local.digest_prefix}*"
+              ]
+            }
+          }
+        },
+        {
+          "Sid": "ReadBucketLocation",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetBucketLocation"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            }
+          }
+        },
+        {
+          "Sid": "ReadEvidenceVersions",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetObject",
+            "s3:GetObjectVersion"
+          ],
+          "Resource": [
+            "${local.bucket_arn}/${local.log_prefix}*",
+            "${local.bucket_arn}/${local.digest_prefix}*"
+          ],
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            }
+          }
+        },
+        {
+          "Sid": "ReadTrail",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:GetTrail",
+            "cloudtrail:GetTrailStatus",
+            "cloudtrail:GetEventSelectors"
+          ],
+          "Resource": "${local.trail_arn}",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        },
+        {
+          "Sid": "ReadDigestPublicKeys",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:ListPublicKeys"
+          ],
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        },
+        {
+          "Sid": "ReadOwnIdentity",
+          "Effect": "Allow",
+          "Action": [
+            "sts:GetCallerIdentity"
+          ],
+          "Resource": "*"
+        }
+      ]
+    },
+    "verifier_policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ListEvidencePrefixes",
+          "Effect": "Allow",
+          "Action": [
+            "s3:ListBucket",
+            "s3:ListBucketVersions"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            },
+            "StringLike": {
+              "s3:prefix": [
+                "${local.log_prefix}*",
+                "${local.digest_prefix}*"
+              ]
+            }
+          }
+        },
+        {
+          "Sid": "ReadBucketLocation",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetBucketLocation"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            }
+          }
+        },
+        {
+          "Sid": "ReadEvidenceVersions",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetObject",
+            "s3:GetObjectVersion"
+          ],
+          "Resource": [
+            "${local.bucket_arn}/${local.log_prefix}*",
+            "${local.bucket_arn}/${local.digest_prefix}*"
+          ],
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            }
+          }
+        },
+        {
+          "Sid": "ReadTrail",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:GetTrail",
+            "cloudtrail:GetTrailStatus",
+            "cloudtrail:GetEventSelectors"
+          ],
+          "Resource": "${local.trail_arn}",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        },
+        {
+          "Sid": "ReadDigestPublicKeys",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:ListPublicKeys"
+          ],
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        },
+        {
+          "Sid": "ReadOwnIdentity",
+          "Effect": "Allow",
+          "Action": [
+            "sts:GetCallerIdentity"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Sid": "InspectExactRuntimeRoles",
+          "Effect": "Allow",
+          "Action": [
+            "iam:GetRole",
+            "iam:ListRolePolicies",
+            "iam:GetRolePolicy",
+            "iam:ListAttachedRolePolicies"
+          ],
+          "Resource": "${local.managed_role_arns}"
+        },
+        {
+          "Sid": "InspectArchiveConfiguration",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetBucketAcl",
+            "s3:GetBucketPolicy",
+            "s3:GetBucketPublicAccessBlock",
+            "s3:GetBucketOwnershipControls",
+            "s3:GetEncryptionConfiguration",
+            "s3:GetBucketVersioning",
+            "s3:GetLifecycleConfiguration"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Condition": {
+            "StringEquals": {
+              "s3:ResourceAccount": "${var.account_id}"
+            }
+          }
+        },
+        {
+          "Sid": "InspectTrailInsights",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:GetInsightSelectors"
+          ],
+          "Resource": "${local.trail_arn}",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        },
+        {
+          "Sid": "RegionalHistoryRead",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:LookupEvents"
+          ],
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        }
+      ]
+    },
+    "test_actor_policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "OnlyRegionalInstanceInventory",
+          "Effect": "Allow",
+          "Action": [
+            "ec2:DescribeInstances"
+          ],
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
+        }
+      ]
+    },
+    "archive_policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ExactTrailAclCheck",
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetBucketAcl"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Principal": {
+            "Service": "cloudtrail.amazonaws.com"
+          },
+          "Condition": {
+            "StringEquals": {
+              "aws:SourceArn": "${local.trail_arn}",
+              "aws:SourceAccount": "${var.account_id}"
+            }
+          }
+        },
+        {
+          "Sid": "ExactTrailLogAndDigestDelivery",
+          "Effect": "Allow",
+          "Action": [
+            "s3:PutObject"
+          ],
+          "Resource": [
+            "${local.bucket_arn}/${local.log_prefix}*",
+            "${local.bucket_arn}/${local.digest_prefix}*"
+          ],
+          "Principal": {
+            "Service": "cloudtrail.amazonaws.com"
+          },
+          "Condition": {
+            "StringEquals": {
+              "aws:SourceArn": "${local.trail_arn}",
+              "aws:SourceAccount": "${var.account_id}",
+              "s3:x-amz-acl": "bucket-owner-full-control"
+            }
+          }
+        },
+        {
+          "Sid": "RequireTls",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": [
+            "s3:*"
+          ],
+          "Resource": [
+            "${local.bucket_arn}",
+            "${local.bucket_arn}/*"
+          ],
+          "Condition": {
+            "Bool": {
+              "aws:SecureTransport": "false"
+            }
+          }
+        },
+        {
+          "Sid": "OnlyCloudTrailMayWrite",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": [
+            "s3:PutObject"
+          ],
+          "Resource": "${local.bucket_arn}/*",
+          "Condition": {
+            "StringNotEqualsIfExists": {
+              "aws:PrincipalServiceName": "cloudtrail.amazonaws.com"
+            }
+          }
+        },
+        {
+          "Sid": "OnlyExactTrailMayWrite",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": [
+            "s3:PutObject"
+          ],
+          "Resource": "${local.bucket_arn}/*",
+          "Condition": {
+            "ArnNotEqualsIfExists": {
+              "aws:SourceArn": "${local.trail_arn}"
+            }
+          }
+        },
+        {
+          "Sid": "DeleteEvidenceRequiresSeparateCleanup",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": [
+            "s3:DeleteObject",
+            "s3:DeleteObjectVersion"
+          ],
+          "Resource": "${local.bucket_arn}/*",
+          "Condition": {
+            "ArnNotEquals": {
+              "aws:PrincipalArn": "${var.cleanup_role_arn}"
+            }
+          }
+        },
+        {
+          "Sid": "NoAutomaticExpiration",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": [
+            "s3:PutLifecycleConfiguration"
+          ],
+          "Resource": "${local.bucket_arn}"
+        },
+        {
+          "Sid": "DeleteBucketRequiresSeparateCleanup",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": [
+            "s3:DeleteBucket"
+          ],
+          "Resource": "${local.bucket_arn}",
+          "Condition": {
+            "ArnNotEquals": {
+              "aws:PrincipalArn": "${var.cleanup_role_arn}"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "resource": {
+    "aws_s3_bucket": {
+      "archive": {
+        "bucket": "${var.archive_bucket_name}",
+        "force_destroy": false,
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_public_access_block": {
+      "archive": {
+        "bucket": "${aws_s3_bucket.archive.id}",
+        "block_public_acls": true,
+        "block_public_policy": true,
+        "ignore_public_acls": true,
+        "restrict_public_buckets": true,
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_ownership_controls": {
+      "archive": {
+        "bucket": "${aws_s3_bucket.archive.id}",
+        "rule": {
+          "object_ownership": "BucketOwnerEnforced"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_versioning": {
+      "archive": {
+        "bucket": "${aws_s3_bucket.archive.id}",
+        "versioning_configuration": {
+          "status": "Enabled"
+        },
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_server_side_encryption_configuration": {
+      "archive": {
+        "bucket": "${aws_s3_bucket.archive.id}",
+        "rule": [
+          {
+            "apply_server_side_encryption_by_default": {
+              "sse_algorithm": "AES256"
+            }
+          }
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_s3_bucket_policy": {
+      "archive": {
+        "bucket": "${aws_s3_bucket.archive.id}",
+        "policy": "${jsonencode(local.archive_policy)}",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "depends_on": [
+          "aws_s3_bucket_public_access_block.archive",
+          "aws_s3_bucket_ownership_controls.archive"
+        ]
+      }
+    },
+    "aws_cloudtrail": {
+      "management": {
+        "name": "cloudsecops-sandbox-management",
+        "s3_bucket_name": "${aws_s3_bucket.archive.id}",
+        "s3_key_prefix": "evidence",
+        "enable_logging": true,
+        "enable_log_file_validation": true,
+        "include_global_service_events": true,
+        "is_multi_region_trail": false,
+        "is_organization_trail": false,
+        "event_selector": [
+          {
+            "include_management_events": true,
+            "read_write_type": "All"
+          }
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "depends_on": [
+          "aws_s3_bucket_policy.archive",
+          "aws_s3_bucket_versioning.archive",
+          "aws_s3_bucket_server_side_encryption_configuration.archive"
+        ]
+      }
+    },
+    "aws_iam_role": {
+      "collector": {
+        "name": "cloudsecops-collector",
+        "path": "/cloudsecops-sandbox/",
+        "max_session_duration": 3600,
+        "assume_role_policy": "${jsonencode(local.collector_trust)}",
+        "force_detach_policies": false,
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "verifier": {
+        "name": "cloudsecops-verifier",
+        "path": "/cloudsecops-sandbox/",
+        "max_session_duration": 3600,
+        "assume_role_policy": "${jsonencode(local.verifier_trust)}",
+        "force_detach_policies": false,
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "test_actor": {
+        "name": "cloudsecops-test-actor",
+        "path": "/cloudsecops-sandbox/",
+        "max_session_duration": 3600,
+        "assume_role_policy": "${jsonencode(local.test_actor_trust)}",
+        "force_detach_policies": false,
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    },
+    "aws_iam_role_policy": {
+      "collector": {
+        "name": "cloudsecops-collector-scope",
+        "role": "${aws_iam_role.collector.id}",
+        "policy": "${jsonencode(local.collector_policy)}",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "verifier": {
+        "name": "cloudsecops-verifier-scope",
+        "role": "${aws_iam_role.verifier.id}",
+        "policy": "${jsonencode(local.verifier_policy)}",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "test_actor": {
+        "name": "cloudsecops-test-actor-scope",
+        "role": "${aws_iam_role.test_actor.id}",
+        "policy": "${jsonencode(local.test_actor_policy)}",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      }
+    }
+  },
+  "output": {
+    "archive_bucket": {
+      "value": "${aws_s3_bucket.archive.id}",
+      "sensitive": true
+    },
+    "trail_arn": {
+      "value": "${aws_cloudtrail.management.arn}",
+      "sensitive": true
+    },
+    "runtime_role_arns": {
+      "value": {
+        "collector": "${aws_iam_role.collector.arn}",
+        "verifier": "${aws_iam_role.verifier.arn}",
+        "test_actor": "${aws_iam_role.test_actor.arn}"
+      },
+      "sensitive": true
+    }
+  }
+}

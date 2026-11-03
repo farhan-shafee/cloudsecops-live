@@ -2,6 +2,15 @@
 .venv312/
 .wheel-venv/
 .tools/
+
+# Future Terraform artifacts contain private identifiers and must never enter Git.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+.terraform.tfstate.lock.info
 __pycache__/
 *.py[cod]
 .pytest_cache/

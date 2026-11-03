@@ -27,6 +27,13 @@ SECURITY = (
     "verifier_cli",
     "pipeline_roles",
 )
+AWS_OFFLINE = (
+    "integrations/aws_cloudtrail/models",
+    "integrations/aws_cloudtrail/parsing",
+    "integrations/aws_cloudtrail/collection",
+    "integrations/aws_cloudtrail/validation",
+    "integrations/aws_cloudtrail/demo",
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -71,6 +78,7 @@ def main() -> int:
     parser.add_argument("report", nargs="?", type=Path, default=Path("coverage.json"))
     parser.add_argument("--require-durable", action="store_true")
     parser.add_argument("--require-security", action="store_true")
+    parser.add_argument("--require-aws", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -117,6 +125,14 @@ def main() -> int:
                 summary = module_summary(files, module)
                 if summary["num_branches"] <= 0 or summary["covered_lines"] <= 0:
                     raise ValueError("required security module was not executed")
+                _, branches = percentages([summary])
+                print(f"{module}.py: branch {branches:.2f}% (required >=85%)")
+                passed &= branches >= 85
+        if options.require_aws:
+            for module in AWS_OFFLINE:
+                summary = module_summary(files, module)
+                if summary["num_branches"] <= 0 or summary["covered_lines"] <= 0:
+                    raise ValueError("required AWS contract module was not executed")
                 _, branches = percentages([summary])
                 print(f"{module}.py: branch {branches:.2f}% (required >=85%)")
                 passed &= branches >= 85

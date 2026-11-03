@@ -1,10 +1,21 @@
 # CloudSecOps Live
 
+Phase1B-AWS-0 prepares the AWS boundary **offline only**, while Wazuh remains blocked by measured workstation memory limits. A separate bounded AWS-shaped parser, injected fake collection transport, exact-version/byte contracts, in-memory checkpoint reference and controlled digest-assessment tests remain unauthenticated. They cannot create trusted findings or close cases. No AWS client or credential discovery is included. The existing synthetic pipeline and migrations001–003 remain intact.
+
+After the hash-locked Python setup below, run the deterministic credential-free demonstration:
+
+```powershell
+.venv\Scripts\python.exe -m cloudsecops_live.integrations.aws_cloudtrail
+.venv\Scripts\python.exe scripts/check_terraform.py
+```
+
+Expected: three AWS-shaped fixture events, `authenticated=false`, pending source authentication, controlled digest consistency and `AWS_AUTHENTICATION_UNAVAILABLE`. The Terraform command checks reviewed source structure/IAM assumptions only; executable/provider validation and effective permissions remain unproven. See [AWS source design](docs/architecture/AWS_OFFLINE_SOURCE.md), [offline operations](docs/AWS_OFFLINE_OPERATIONS.md), [validation record](docs/PHASE1B_AWS_OFFLINE_VALIDATION.md), [Terraform preparation](infra/aws-offline/README.md) and [no-AI lab](docs/labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md).
+
 An AWS-first security engineering portfolio and training environment. The intended full workflow is:
 
 **Actual AWS event → trusted ingestion → preserved evidence → tested detection → analyst investigation → reviewed response recommendation → independently verified outcome.**
 
-## Current status: Phase 1A-3B reviewed synthetic investigations
+## Implemented investigation workspace: Phase 1A-3B
 
 The first executable slice is implemented: **explicitly synthetic CloudTrail-shaped gzip → bounded parsing → preserved compressed/content provenance → normalized events → deterministic inventory-burst candidate findings**.
 

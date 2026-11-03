@@ -1,5 +1,7 @@
 # System design
 
+Phase1B-AWS-0 adds a separate [offline AWS source boundary](AWS_OFFLINE_SOURCE.md) before capacity-blocked Wazuh work. Its AWS-shaped derivatives are distinct from accepted synthetic event types; authentication remains unavailable even for consistent controlled receipts. The architecture below remains the future live target. No trusted AWS finding, live verifier authority or database migration is supplied by this preparation.
+
 Status: full target architecture, 2026-11-03. Phase 1A-1 implements only the [offline synthetic evidence/detection foundation](../OFFLINE_FOUNDATION.md). Phase 1A-2 adds [local durable evidence, jobs and unreviewed cases](PERSISTENCE_CONTRACTS.md). Phase 1A-3A adds the [authenticated local workspace](ANALYST_WORKSPACE.md), assigned-case access and auditable analyst notes. Phase 1A-3B implements [evidence-bound synthetic no-action review, independent local consistency verification and guarded exercise closure](REVIEWED_WORKFLOW.md). Live authenticity, SIEM, cloud response and the complete authentic vertical slice below remain proposed. Read with the [reuse audit](REUSE_AUDIT.md), [threat model](THREAT_MODEL.md), [cost plan](CLOUD_COST_AND_SAFETY.md), and [delivery gates](../DELIVERY_ROADMAP.md).
 
 ## Intent and scope

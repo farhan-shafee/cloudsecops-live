@@ -1,5 +1,13 @@
 # Cloud cost and safety
 
+## Phase1B-AWS-0 offline override
+
+This milestone creates source/contracts only: zero AWS calls, provisioning, budget configuration or spend. Fixed `us-east-1` [Terraform source](../../infra/aws-offline/README.md) has no compute, NAT, RDS, data events, Insights, paid scanner or hosted SIEM. Private inputs have no real defaults and must never replace tracked placeholders. Collector/verifier are read-only; the test actor has only regional DescribeInstances. Provisioning/cleanup remain separate externally reviewed authorities.
+
+Preserve evidence until explicit retention/cleanup review: versioning, `force_destroy=false`, `prevent_destroy` and no automatic current/noncurrent expiry. This overrides the earlier proposed30-day lifecycle for this unprovisioned design. These controls are not WORM and do not restrain a trusted administrator from changing policy. Retained versions can accumulate later charges; no monthly-price guarantee follows. Reprice region/SKUs and review source delivery, versions, backups and exact deletion inventory before separately authorized provisioning/cleanup. No budget or notification destination is configured.
+
+Wazuh remains NO-GO: six recheck samples had5.588–5.900GiB Windows availability against required12GiB. Do not add WSL availability or swap to physical RAM, change global limits, prune evidence, stop unrelated services or rent a substitute host. The historical PostgreSQL SIGSEGV remains unexplained; use only supported sequential regression validation and stop on any new native crash.
+
 Status: Phase 0 plan, 2026-11-03. **No AWS resources or paid services were enabled during this review.** No credentials were configured and no AWS exercises ran. Amounts are USD planning estimates for proposed `us-east-1`; taxes, existing account charges and local hardware/electricity are excluded.
 
 ## Smallest footprint
