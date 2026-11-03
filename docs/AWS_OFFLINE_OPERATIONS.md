@@ -88,7 +88,8 @@ provides independent tasks and scoring.
 | Identical event repeated versus changed unknown field for the same identity | Count the identical delivery as a duplicate; preserve changed complete records as conflicts. |
 | Stale CAS generation, interruption before commit, replay after a committed lost acknowledgement | Reject stale/partial commit; exact committed replay returns the retained in-memory batch without another transport call. Process restart durability remains absent. |
 | Missing/delayed/invalid/contradictory controlled digest observations | Pending, invalid or conflicting assessment as appropriate; no path authenticates the source. |
-| All controlled checks marked valid, local hashes correct, exact member provided | Consistency can pass, but state stays pending and `require_authenticated` still raises `AWS_AUTHENTICATION_UNAVAILABLE`. |
+| Archive rehashed independently of retained content; corrupt/truncated/concatenated gzip; expansion exceeds bounds | `AWS_ARCHIVE_CONTENT_MISMATCH` or `AWS_ARCHIVE_INVALID`; byte-domain hashes alone cannot establish the archive/content relationship. |
+| All controlled checks valid, bounded archive expands to the exact retained content, local hashes correct, exact member provided | Byte/member consistency can pass, but state stays pending and `require_authenticated` still raises `AWS_AUTHENTICATION_UNAVAILABLE`. Normalized-event derivation, source scope and real acquisition continuity are not verified by this assessment. |
 | `authenticated=true`, forged receipt JSON or raw AWS input sent to synthetic CLI/storage | No promotion into accepted synthetic evidence, trusted findings or human closure. |
 
 `listing_complete=true` describes the bounded supplied poll, not a frozen S3 snapshot.

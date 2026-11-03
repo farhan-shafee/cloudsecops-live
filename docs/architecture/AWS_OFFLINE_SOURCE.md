@@ -154,11 +154,19 @@ synthetic batch/checkpoint implementation.
 The [assessment boundary](../../src/cloudsecops_live/integrations/aws_cloudtrail/validation.py)
 accepts typed `ControlledValidation` test observations. It checks command outcome,
 completeness, observed continuity, standard/backfill/signature outcomes, local byte hashes,
-and exact member location/version/content hash. Missing or delayed observations stay
+and exact member location/version/content hash. Independently rehashed byte domains are
+insufficient: retained content must equal bounded decompression of the exact retained
+archive. Strict nested types, byte ceilings, exact declared size and current non-delete,
+non-null-version metadata are checked before consistency can pass. Missing or delayed observations stay
 pending; invalid checks stay invalid; contradictory exact-member hashes conflict.
 Even the consistent path returns `AWS_AUTHENTICATION_UNAVAILABLE` with
 `authenticated=False`. The dataclass is not a signed authoritative receipt, CLI-output
 parser, cryptographic validator or supported AWS acquisition implementation.
+
+`consistency_passed` covers archive/content and controlled digest-member byte consistency
+only. It does not verify normalized-event derivation, approved collection scope, retrieval
+timing or actual S3 continuity; caller-supplied observations cannot establish those facts.
+Those remain independent future acquisition/authentication and trusted-ingestion gates.
 
 Future authenticity must use the supported CloudTrail validation behavior and preserve
 the evidence needed to bind its result to the imported file. The AWS CLI requires online

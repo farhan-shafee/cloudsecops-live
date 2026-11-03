@@ -34,12 +34,12 @@ Final clean local acceptance on Windows, Python3.14.8, PostgreSQL17.11, psycopg3
 
 | Measurement | Observed result |
 | --- | --- |
-| Complete unit suite |864passed plus11subtests; no failures or skips |
-| New offline AWS tests within that suite |198passed |
+| Complete unit suite |904passed plus11subtests; no failures or skips |
+| New offline AWS tests within that suite |238passed, including40archive-binding regressions |
 | Terraform structural policy/mutation tests within that suite |54passed |
-| Complete real PostgreSQL suite |170passed,0failures,0errors,0skips;901.87seconds |
-| Full-package lines / actual branches |96.22% /90.09%, no source exclusions |
-| Coverage.py combined line/branch metric |94.59% |
+| Complete real PostgreSQL suite |170passed,0failures,0errors,0skips;924.37seconds |
+| Full-package lines / actual branches |96.23% /90.12%, no source exclusions |
+| Coverage.py combined line/branch metric |94.61% |
 | Original ingestion / detection branches |93.45% /100.00%; original >=90% gates retained |
 | Original foundation lines |97.25%; original >=90% gate retained |
 | All13existing security-module branch gates |Passed individually at >=85% |
@@ -58,9 +58,9 @@ New module actual branch coverage, independently enforced at >=85% each:
 
 The original durable groups remain separately reported: persistence76.85%, worker/outbox75.00% and cases88.46% branches. These are measurements, not newly invented85% gates. Existing complete-package line and per-security-module requirements were preserved.
 
-The private final harness receipt is `.tools/receipts/phase1b-aws0-python314-final.json`, timestamped2026-11-03T23:14:01.934966Z. It records real process termination, isolated backend interruption, transaction rollback, migration/restore, direct-role denials, loopback HTTPS and backup/restore acceptance. It identifies the precommit dirty tree honestly; hashes bind the executed source and integration fixtures, which were rechecked before commit. Private diagnostics and database access remain outside Git.
+The private corrected-source harness receipt is `.tools/receipts/phase1b-aws0-reviewfix-python314.json`, timestamped2026-11-03T23:43:02.167379Z. It records real process termination, isolated backend interruption, transaction rollback, migration/restore, direct-role denials, loopback HTTPS and backup/restore acceptance. It identifies the precommit dirty tree honestly; hashes bind the executed source and integration fixtures, which were rechecked before commit. Private diagnostics and database access remain outside Git.
 
-An earlier full database run also passed170tests, but its merged coverage contained stale line measurements after the parser-version-binding correction. That measurement was discarded. An attempted rerun exposed Windows temporary/cache ACL errors before tests could run. No permissions or existing directories were reset: a new private pytest base directory and disabled cache plugin permitted the complete clean864-unit then170-database sequence above, with coverage restarted from scratch. Tests and coverage requirements were not weakened.
+An earlier full database run also passed170tests, but its merged coverage contained stale line measurements after the parser-version-binding correction. That measurement was discarded. An attempted rerun exposed Windows temporary/cache ACL errors before tests could run. No permissions or existing directories were reset: a new private pytest base directory and disabled cache plugin permitted clean coverage from scratch. The initial published head passed864units and170database tests. After the fresh-review correction, coverage was again restarted for the complete904-unit then170-database sequence above. Tests and coverage requirements were not weakened.
 
 After acceptance, PostgreSQL remained healthy with0restarts, `OOMKilled=false` and unchanged1CPU/512MiB/64MiBshared-memory/pids128 limits. A bounded read-only log check since2026-11-03T22:39:45Z found0new native-crash or exhaustion signatures. This is observation of this sequential window, not proof that the historical engine failure was fixed.
 
@@ -69,6 +69,8 @@ After acceptance, PostgreSQL remained healthy with0restarts, `OOMKilled=false` a
 Independently authored failures reproduced escaping/regressing marker acceptance, inconsistent page ordering and an earlier object changing during a later retrieval. The corrected collector validates marker scope/order and final current-version continuity across all staged objects. A short-read regression reproduced rejection of legitimate chunked streams; bounded incremental reads now pass. Additional tests enforce expiry between stages, malformed/error results, bounded retries, checkpoint CAS/interruption/lost acknowledgment, whole-record conflicts, schema/limit/identity types, stream failures and all unavailable-authentication cases.
 
 Independent IAM review found that ListObjectVersions needs `s3:ListBucketVersions`. Both read roles and the source policy now include it under exact bucket/prefix/account conditions, retaining GetObject and GetObjectVersion for current HEAD and exact-version retrieval. No broad runtime administration or write scope was introduced. Independent local cross-review found no remaining material issue at its reviewed source; fresh published-head review remains separate evidence.
+
+Fresh PR#6 review at the initial published head `7fd54543d588bfcd7d80d99e92898e7d32ae49cf` found a P2 archive/content binding defect. Independent hashes could agree with a controlled member while retained content did not come from the retained archive. Authentication stayed unavailable, but the consistency result was incorrect. A root reproduction and30independent failing tests established the issue before correction. The fix reuses unchanged bounded gzip expansion, requires byte equality, validates exact nested types and size/current-version metadata, and returns fixed non-sensitive reasons. Forty independent archive-binding tests pass, including malformed/truncated/CRC/ISIZE/trailing/concatenated archives, exact/one-over byte budgets, high-ratio expansion, forged content/member hashes and valid recompression. The assessment scope is expressly byte/member consistency, not normalized-event or acquisition authentication. The full corrected-source local acceptance above is complete; fresh exact-head remote CI/re-review is recorded separately on PR#6 and the delivery report.
 
 ## Reproduce and stop boundary
 

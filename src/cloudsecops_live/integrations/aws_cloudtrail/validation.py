@@ -5,8 +5,13 @@ from enum import StrEnum
 from hashlib import sha256
 from typing import Literal
 
+from cloudsecops_live.contracts import Limits
 from cloudsecops_live.errors import EvidenceError
-from cloudsecops_live.integrations.aws_cloudtrail.collection import RetrievedLog
+from cloudsecops_live.ingestion import _expand
+from cloudsecops_live.integrations.aws_cloudtrail.collection import ObjectVersion, RetrievedLog
+from cloudsecops_live.integrations.aws_cloudtrail.models import AwsLog
+
+_DEFAULT_LIMITS = Limits()
 
 
 class CheckOutcome(StrEnum):
@@ -44,6 +49,13 @@ class ControlledValidation:
 
 @dataclass(frozen=True, slots=True)
 class DigestAssessment:
+    """Archive/content/member byte consistency only, never source authentication.
+
+    This does not verify normalized-event derivation, approved collection scope,
+    retrieval timing or real S3 version continuity. Those require independent
+    future collection and signed-source validation before trusted ingestion.
+    """
+
     state: str
     reason: str
     consistency_passed: bool
@@ -53,11 +65,26 @@ class DigestAssessment:
     )
 
 
-def assess_digest(obj: RetrievedLog, result: ControlledValidation) -> DigestAssessment:
+def assess_digest(
+    obj: RetrievedLog, result: ControlledValidation, *, limits: Limits = _DEFAULT_LIMITS
+) -> DigestAssessment:
     """Reject incomplete controlled evidence; consistent test data stays pending."""
     if (
         type(obj) is not RetrievedLog
         or type(result) is not ControlledValidation
+        or type(limits) is not Limits
+        or type(obj.log) is not AwsLog
+        or type(obj.reference) is not ObjectVersion
+        or type(obj.log.archive_bytes) is not bytes
+        or type(obj.log.content_bytes) is not bytes
+        or type(obj.reference.size) is not int
+        or any(
+            type(v) is not bool for v in (obj.reference.is_delete_marker, obj.reference.is_latest)
+        )
+        or any(
+            not isinstance(v, str) or not 1 <= len(v) <= 1024
+            for v in (obj.reference.bucket, obj.reference.key, obj.reference.version_id)
+        )
         or not isinstance(result.tool_version, str)
         or not 1 <= len(result.tool_version) <= 128
         or type(result.exit_code) is not int
@@ -89,6 +116,15 @@ def assess_digest(obj: RetrievedLog, result: ControlledValidation) -> DigestAsse
             "pending_source_authentication" if pending else "invalid", reason, False
         )
 
+    if (
+        len(obj.log.archive_bytes) > limits.max_compressed_bytes
+        or len(obj.log.content_bytes) > limits.max_expanded_bytes
+        or obj.reference.size != len(obj.log.archive_bytes)
+        or obj.reference.is_delete_marker
+        or not obj.reference.is_latest
+        or obj.reference.version_id == "null"
+    ):
+        return rejected("AWS_ARCHIVE_INVALID")
     if result.exit_code != 0:
         return rejected("AWS_VALIDATION_COMMAND_FAILED")
     if not result.complete:
@@ -106,6 +142,12 @@ def assess_digest(obj: RetrievedLog, result: ControlledValidation) -> DigestAsse
         or sha256(obj.log.content_bytes).hexdigest() != obj.log.content_sha256
     ):
         return rejected("AWS_LOCAL_HASH_MISMATCH")
+    try:
+        expanded = _expand(obj.log.archive_bytes, limits)
+    except EvidenceError:
+        return rejected("AWS_ARCHIVE_INVALID")
+    if expanded != obj.log.content_bytes:
+        return rejected("AWS_ARCHIVE_CONTENT_MISMATCH")
     exact = [
         m
         for m in result.members
