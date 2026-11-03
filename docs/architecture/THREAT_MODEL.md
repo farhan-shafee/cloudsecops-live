@@ -1,6 +1,6 @@
 # Threat model
 
-Status: Phase 0 proposal, 2026-11-03. Controls are requirements, not installed protections. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
+Status: target threat model, 2026-11-03. Phase 1A-1 tests only the [offline parsing/detection subset](../OFFLINE_FOUNDATION.md). Live-source, authorization, storage and response controls remain requirements. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
 
 ## Assets, actors and scope
 
@@ -40,6 +40,6 @@ Trust zones: AWS control plane, source archive, collector/parser, database/API, 
 
 ## Deferred controls and residual exposure
 
-No implementation verifies these invariants yet. Host protection, disk encryption, backup security and account ownership require operator confirmation. High availability, enterprise identity, organization-wide SCPs, multi-tenancy, off-account immutable evidence and independent institutional reviewers are outside initial scope. Re-review the threat model before any deployment depends on them.
+Offline parser/detector tests verify bounded inputs, synthetic trust restrictions, complete-record conflicts and session separation. They do not verify the live-source, approval, durable-audit or response invariants. Host protection, disk encryption, backup security and account ownership require operator confirmation. High availability, enterprise identity, organization-wide SCPs, multi-tenancy, off-account immutable evidence and independent institutional reviewers are outside initial scope. Re-review the threat model before any deployment depends on them.
 
 The first live gate requires hostile-input, source-spoofing, approval-replay, evidence-drift, crash-recovery and cost-bound reviews. Mutation gates additionally require action-policy and independent-verification tests. Keep raw acceptance receipts private and publish sanitized summaries only.

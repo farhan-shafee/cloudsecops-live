@@ -1,0 +1,16 @@
+# Development/build tools only; application runtime has no dependencies.
+# PyPI metadata/licenses and pip-audit reviewed 2026-11-03. Tool distributions
+# retain their own MIT/Apache/BSD/PSF/MPL licenses; project MIT covers original code.
+# Regenerate with uv==0.13.7:
+# python -m uv pip compile --universal --python-version 3.12 --generate-hashes
+#   --output-file requirements-dev.lock requirements-dev.in
+pytest==9.2.0
+pytest-cov==7.1.0
+ruff==0.17.3
+mypy==2.4.1
+build==1.6.1
+hatchling==1.33.0
+editables==0.6
+pip-audit==2.10.1
+detect-secrets==1.5.0
+pip==26.3
