@@ -100,15 +100,22 @@ def main() -> int:
             "counts": counts,
             "pytest_exit_code": result.returncode,
             "required_tests_skipped": counts["skipped"] != 0,
+            "retained_databases_created": int(properties.get("retained_databases_created", "-1")),
             "fault_methods": {
                 "controlled_exception": [
                     "ingestion commit",
                     "worker commit",
                     "sink receipt and ack",
                 ],
-                "genuine_process_termination": ["worker before commit", "worker after commit"],
+                "genuine_process_termination": [
+                    "worker before commit",
+                    "worker after commit",
+                    "independent verifier before commit",
+                    "independent verifier after commit",
+                ],
                 "database_connection_interruption": (
-                    "pg_terminate_backend on this test connection only"
+                    "pg_terminate_backend on this test connection only; "
+                    "includes review, verification and closure transactions"
                 ),
                 "backup_restore": (
                     "pg_dump custom archive and pg_restore into retained fresh database"

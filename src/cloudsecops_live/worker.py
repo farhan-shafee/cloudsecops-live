@@ -5,10 +5,8 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
 
-from psycopg.types.json import Jsonb
-
 from cloudsecops_live.cases import publish
-from cloudsecops_live.database import Database
+from cloudsecops_live.database import Database, machine_audit
 from cloudsecops_live.detection import detect
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.storage import load_logs
@@ -33,6 +31,7 @@ def claim_job(db: Database, *, lease_seconds: int = 30) -> Claim | None:
     token = str(uuid4())
     with db.connect() as conn:
         db.check_schema(conn)
+        conn.execute("SELECT singleton FROM csl.pipeline WHERE singleton FOR UPDATE")
         conn.execute(
             "UPDATE csl.jobs SET status='dead',claim_token=NULL,lease_until=NULL,"
             "last_error='RETRIES_EXHAUSTED',completed_at=clock_timestamp() "
@@ -57,10 +56,7 @@ def claim_job(db: Database, *, lease_seconds: int = 30) -> Claim | None:
             "INSERT INTO csl.job_attempts(job_id,attempt,token) VALUES (%s,%s,%s)",
             (row["job_id"], row["attempts"] + 1, token),
         )
-        conn.execute(
-            "INSERT INTO csl.audit(kind,payload) VALUES ('job_claim',%s)",
-            (Jsonb({"job_id": row["job_id"], "attempt": row["attempts"] + 1}),),
-        )
+        machine_audit(conn, "job_claim", {"job_id": row["job_id"], "attempt": row["attempts"] + 1})
     return Claim(row["job_id"], token, row["generation"], row["attempts"] + 1)
 
 
@@ -81,10 +77,7 @@ def _record_failure(db: Database, claim: Claim, code: str) -> None:
                 "WHERE job_id=%s AND attempt=%s AND token=%s",
                 (code, claim.job_id, claim.attempt, claim.token),
             )
-            conn.execute(
-                "INSERT INTO csl.audit(kind,payload) VALUES ('job_failure',%s)",
-                (Jsonb({"job_id": claim.job_id, "code": code}),),
-            )
+            machine_audit(conn, "job_failure", {"job_id": claim.job_id, "code": code})
 
 
 def run_job(
@@ -137,9 +130,8 @@ def run_job(
                 "WHERE job_id=%s AND attempt=%s AND token=%s",
                 (status, claim.job_id, claim.attempt, claim.token),
             )
-            conn.execute(
-                "INSERT INTO csl.audit(kind,payload) VALUES ('job_completed',%s)",
-                (Jsonb({"job_id": claim.job_id, "status": status, **counts}),),
+            machine_audit(
+                conn, "job_completed", {"job_id": claim.job_id, "status": status, **counts}
             )
             _fault(fault, "before_job_commit")
         _fault(fault, "after_job_commit")

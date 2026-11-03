@@ -9,6 +9,7 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Jsonb
 
+from cloudsecops_live.database import machine_audit
 from cloudsecops_live.detection import DetectionReport
 from cloudsecops_live.errors import EvidenceError
 
@@ -69,9 +70,7 @@ def revise_case(
                 (case_id, revision, kind, Jsonb(stored)),
             )
         else:
-            conn.execute(
-                "INSERT INTO csl.audit(kind,payload) VALUES (%s,%s)", (kind, Jsonb(stored))
-            )
+            machine_audit(conn, kind, stored)
     outbox_id = evidence_fingerprint(
         {"domain": "offline-outbox/1", "case": case_id, "rev": revision}
     )

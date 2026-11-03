@@ -10,7 +10,12 @@ from typing import Any
 import psycopg
 from psycopg import sql
 
-from cloudsecops_live.database import Database, _security_hash, _validate_prefix
+from cloudsecops_live.database import (
+    LATEST_SCHEMA_VERSION,
+    Database,
+    _receipt_hash,
+    _validate_prefix,
+)
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.workspace_roles import validate_identity
 
@@ -39,7 +44,9 @@ def _validate(db: Database, identity: str) -> dict[str, Any] | None:
             row = conn.execute("SELECT csl.ws_schema_receipt() AS value").fetchone()
             receipt = row["value"] if row and row["value"] else []
             _validate_prefix(receipt)
-            if len(receipt) != 2 or receipt[-1]["schema_hash"] != _security_hash(conn):
+            if len(receipt) != LATEST_SCHEMA_VERSION or receipt[-1]["schema_hash"] != _receipt_hash(
+                conn, len(receipt)
+            ):
                 raise EvidenceError("WS_SCHEMA")
             validate_identity(conn, identity)
             if identity == "gate":

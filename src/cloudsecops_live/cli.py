@@ -117,6 +117,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         from cloudsecops_live.workspace_cli import main as workspace_main
 
         return workspace_main(arguments[1:])
+    if arguments and arguments[0] == "verifier":
+        from cloudsecops_live.verifier_cli import main as verifier_main
+
+        return verifier_main(arguments[1:])
     if arguments and arguments[0].startswith("db-"):
         from cloudsecops_live.durable_cli import main as durable_main
 

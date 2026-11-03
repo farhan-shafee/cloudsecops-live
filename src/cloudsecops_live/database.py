@@ -18,13 +18,36 @@ import psycopg
 from psycopg import Connection
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 from cloudsecops_live.errors import EvidenceError
 
 _MIGRATION = files("cloudsecops_live").joinpath("sql/001_initial.sql")
-_MIGRATIONS = (_MIGRATION, files("cloudsecops_live").joinpath("sql/002_workspace.sql"))
+_MIGRATIONS = (
+    _MIGRATION,
+    files("cloudsecops_live").joinpath("sql/002_workspace.sql"),
+    files("cloudsecops_live").joinpath("sql/003_reviewed_workflow.sql"),
+)
 LATEST_SCHEMA_VERSION = len(_MIGRATIONS)
 _ALLOWED = {"host", "port", "dbname", "user", "password", "connect_timeout", "application_name"}
+
+
+def machine_audit(conn: Connection[dict[str, Any]], kind: str, payload: dict[str, Any]) -> None:
+    """Route restricted machines through the fixed audit helper; retain explicit owner APIs.
+
+    This selects a compatible call path, not authority. PostgreSQL denies direct audit
+    writes to every runtime identity, and the definer helper derives its own actor.
+    Older schema/maintenance tests have no machine memberships and keep their original SQL.
+    """
+    restricted = conn.execute(
+        "SELECT EXISTS(SELECT FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles r "
+        "ON r.oid=m.roleid WHERE m.member=(SELECT oid FROM pg_catalog.pg_roles "
+        "WHERE rolname=SESSION_USER) AND r.rolname ~ '^csl_p[cw]_[0-9a-f]{12}$') AS value"
+    ).fetchone()
+    if restricted and restricted["value"]:
+        conn.execute("SELECT csl.pi_audit(%s,%s)", (kind, Jsonb(payload)))
+    else:
+        conn.execute("INSERT INTO csl.audit(kind,payload) VALUES (%s,%s)", (kind, Jsonb(payload)))
 
 
 def _schema_hash(conn: Connection[dict[str, Any]]) -> str:
@@ -109,6 +132,25 @@ def _validate_prefix(rows: list[dict[str, Any]]) -> None:
             raise EvidenceError("SCHEMA_INCOMPATIBLE")
 
 
+def _receipt_hash(conn: Connection[dict[str, Any]], version: int) -> str:
+    """Keep the original catalog algorithms intact; v3 binds the second owner defaults."""
+    if version == 1:
+        return _schema_hash(conn)
+    previous = _security_hash(conn)
+    if version == 2:
+        return previous
+    rows = conn.execute(
+        "SELECT d.defaclobjtype::text AS kind,pg_catalog.pg_get_userbyid(d.defaclrole) "
+        "AS owner,d.defaclacl::text AS acl FROM pg_catalog.pg_default_acl d "
+        "WHERE d.defaclnamespace=0 AND d.defaclobjtype='f' AND d.defaclrole="
+        "(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='csl_vf_owner') "
+        "ORDER BY 1,2,3"
+    ).fetchall()
+    return sha256(
+        (previous + json.dumps(rows, sort_keys=True, separators=(",", ":"))).encode()
+    ).hexdigest()
+
+
 class Database:
     """An explicit lab/test DSN; never resolve hosts or follow libpq services."""
 
@@ -142,7 +184,12 @@ class Database:
             "sslmode": "disable",
             "gssencmode": "disable",
             "passfile": os.devnull,
-            "options": "-c search_path=pg_catalog -c statement_timeout=30000 -c lock_timeout=10000",
+            # This bounded one-CPU lab uses independent concurrent transactions,
+            # without per-query parallel workers or their dynamic shared memory.
+            "options": (
+                "-c search_path=pg_catalog -c statement_timeout=30000 -c lock_timeout=10000 "
+                "-c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0"
+            ),
         }
         conn = psycopg.connect(make_conninfo(**values), row_factory=dict_row)
         if not 170011 <= conn.info.server_version < 180000:
@@ -170,7 +217,7 @@ class Database:
                         "csl.schema_migrations ORDER BY version"
                     ).fetchall()
                     _validate_prefix(rows)
-                    actual = _schema_hash(conn) if len(rows) == 1 else _security_hash(conn)
+                    actual = _receipt_hash(conn, len(rows))
                     if rows[-1]["schema_hash"] != actual or target < len(rows):
                         raise EvidenceError("SCHEMA_INCOMPATIBLE")
                 except psycopg.Error:
@@ -181,7 +228,7 @@ class Database:
                 source = _MIGRATION if version == 1 else _MIGRATIONS[version - 1]
                 script = source.read_bytes().decode("utf-8")
                 conn.execute(script)
-                if version == 2:
+                if version >= 2:
                     from cloudsecops_live.workspace_roles import apply_security
 
                     apply_security(conn)
@@ -191,9 +238,9 @@ class Database:
                         (
                             version,
                             sha256(script.encode()).hexdigest(),
-                            _security_hash(conn),
+                            _receipt_hash(conn, version),
                             _schema_hash(conn),
-                            uuid4(),
+                            uuid4() if version == 2 else None,
                         ),
                     )
                 else:
@@ -219,7 +266,7 @@ class Database:
             _validate_prefix(rows)
             if len(rows) != len(_MIGRATIONS):
                 raise EvidenceError("SCHEMA_INCOMPATIBLE")
-            if rows[-1]["schema_hash"] != _security_hash(conn):
+            if rows[-1]["schema_hash"] != _receipt_hash(conn, len(rows)):
                 raise EvidenceError("SCHEMA_INCOMPATIBLE")
             pipeline = conn.execute("SELECT count(*) AS n FROM csl.pipeline").fetchone()
             if not pipeline or pipeline["n"] != 1:

@@ -4,6 +4,8 @@ Scope: project-only, offline PostgreSQL and synthetic fixtures. Preserve origina
 
 Phase 1A-3A adds [workspace operations](WORKSPACE_OPERATIONS.md) and [restricted SQL identities](architecture/ANALYST_WORKSPACE.md). The migration/maintenance identity stays outside runtime configuration. Run explicit `workspace roles-setup` before a fresh latest migration. All 22 legacy tables remain; seven workspace tables are added by forward migration 002. Never edit migration 001 or reset a retained database to repair compatibility failures.
 
+Phase1A-3B adds migration003 and twelve workflow/verifier/pipeline-identity tables, preserving all29 previous tables and the v2 UUID. The current total is41 tables. [Reviewed-workflow operations](REVIEWED_WORKFLOW_OPERATIONS.md) describes restricted service custody, current review/receipt/closure gates and auditable invalidation/reopen. No human transition rewrites the machine case or raw evidence. Human, collector, worker and verifier CONNECT must stay quarantined on restore until v3 ownership/grants/default ACL and original-fingerprint comparison commit.
+
 ## Reproducible setup
 
 Run from the repository root with Python 3.12 or 3.14 and Docker Desktop/Engine available:
@@ -14,7 +16,9 @@ py -3.14 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --no-deps --no-build-isolation -e .
 .\.venv\Scripts\python.exe scripts/local_postgres.py start
 .\.venv\Scripts\python.exe -m cloudsecops_live workspace roles-setup --maintenance-config .tools/private/local-postgres.json
-.\.venv\Scripts\python.exe -m cloudsecops_live db-migrate
+.\.venv\Scripts\python.exe -m cloudsecops_live db-migrate --maintenance
+.\.venv\Scripts\python.exe -m cloudsecops_live workspace pipeline-add --maintenance-config .tools/private/local-postgres.json --kind collector --config .tools/private/collector.json
+.\.venv\Scripts\python.exe -m cloudsecops_live workspace pipeline-add --maintenance-config .tools/private/local-postgres.json --kind worker --config .tools/private/worker.json
 .\.venv\Scripts\python.exe -m cloudsecops_live db-ingest --checkpoint demo-1 fixtures/synthetic/inventory-burst.json.gz
 .\.venv\Scripts\python.exe -m cloudsecops_live db-work --limit 64
 .\.venv\Scripts\python.exe -m cloudsecops_live db-cases
@@ -26,12 +30,14 @@ Linux uses `python3.12 -m venv .venv` and `.venv/bin/python` for the same comman
 
 The fixture creates three unique events and one synthetic candidate draft. Repeating the same checkpoint returns the original receipt and produces no extra case revision. Hashes and local integrity validation never authenticate AWS. `db-deliver` yields only a local test receipt.
 
+Provision the collector and worker private files once; existing files are never overwritten. Normal commands select those restricted identities, with actual catalog checks on connection. They cannot use maintenance credentials implicitly. `--maintenance` is the explicit owner-authority path for migration, protected restore verification or deliberate operator repair. It is never a normal web, verifier, collector or worker configuration.
+
 ## First discriminating checks
 
 | Symptom | Read next | Expected decision |
 | --- | --- | --- |
 | Database operation fails | `scripts/local_postgres.py status`; check Docker and free space | Preserve pending work; restore project connectivity. Do not switch to hosted services. |
-| Schema missing/incompatible | Confirm checkout/installed wheel and migration revision | Fresh authorized lab: run `db-migrate`. Existing incompatible data: preserve it and investigate; do not erase the ledger or edit its checksum. |
+| Schema missing/incompatible | Confirm checkout/installed wheel and migration revision | Fresh authorized lab: run `db-migrate --maintenance`. Existing incompatible data: preserve it and investigate; do not erase the ledger or edit its checksum. |
 | Ingestion rejected | Read bounded error code and validate fixture structure/limits | Fix the source or leave it quarantined; no partial event acceptance. Do not weaken bounds or relabel it trusted. |
 | Ingestion committed, no case | `db-status`, then `db-work --limit 64` | Pending/leased/dead work differs from a successful no-finding result. Check rule predicates and conflicts. |
 | Worker died | Inspect job status, attempt and lease expiry | Active leases are not reclaimed. After expiry, a bounded worker retries with a new fencing token. Never manually acknowledge the old job. |
@@ -63,10 +69,32 @@ The following is an explicit maintenance procedure, not a browser/API feature. U
 2. Restore the private dump into that target. Until security repair commits, runtime logins must fail to connect. Default PUBLIC function execution in a no-ACL restore is unsafe without this database connection quarantine.
 3. Ensure the original stable roles and mapped per-account LOGIN identities still exist. Same-cluster tests retain them. Cross-host roles, secrets and TLS/configuration recovery are not implemented or tested; do not claim a successful cross-host recovery from a database dump alone.
 4. Create a new private maintenance JSON pointing only to the fresh target using the same private-file protections as the launcher. Run `workspace restore-security --maintenance-config <private_target_config>`. The helper validates checksums/structure, reapplies owner/grants and scoped CONNECT, then requires the **original full fingerprint** in the same transaction. Unexpected schema/ACL/owner state must fail; never update the stored hash to accept it.
-5. Run `db-verify --config <private_target_config>` (use `db-verify --help` for the shared CLI option placement), compare every table/original hash, validate each actual runtime SQL identity and test forbidden direct SQL. Privately redirect runtime DSNs to the target; validate the exact TLS origin/certificate and run the verified HTTPS smoke before serving.
+5. Run `db-verify --maintenance --config <private_target_config>` (use `db-verify --help` for the shared CLI option placement), compare every table/original hash, validate each actual runtime SQL identity and test forbidden direct SQL. Privately redirect runtime DSNs to the target; validate the exact TLS origin/certificate and run the verified HTTPS smoke before serving.
 
 The original v1 ledger checksum/catalog algorithm remains intact. Version 2 additionally binds owners, table/column/function/default ACLs, database owner/ACL and public schema authority. Database name is excluded from the security identity so a separately named target can match; maintenance ownership must match. Catalog drift, runtime database ownership/CREATE, schema CREATE, direct table/column privileges or unexpected role memberships prevent startup. Restoration does not rebaseline the ledger.
 
 Legacy NUL evidence may remain as bytea. Migration preserves it without parsing; replay verification remains incompatible and reports a validation failure accurately. Keep those bytes, quarantine receipts and database intact. New escaped/decoded NUL sources are permanently quarantined before JSONB persistence, without accepted events, checkpoint movement, findings or partial batches. An incompatible legacy replay is not repaired by editing the evidence.
 
-The harness retains a finite maximum of 128 fresh test databases per run, with local capacity checked before increasing the previous 96 limit for the expanded acceptance suite. This is a fixture resource bound, not an exemption from tests or coverage. Every rerun still creates distinct named databases and deletes none.
+The harness retains a finite maximum of192 fresh test databases per run. Before increasing the previous128 limit for Phase1A-3B, host free capacity (C397GB/D861GB) and the project PostgreSQL filesystem (877,398,708KiB available) were rechecked. Execution receipts now record the actual retained database count separately from test count. This is a fixture resource bound, not an exemption from tests or coverage. Every rerun still creates distinct named databases and deletes none.
+
+Retained development databases can contain earlier, unmerged migration003 prototypes. Their checksums intentionally differ from the frozen implementation. Preserve them as test artifacts; do not rewrite their ledgers or reset them to make current startup pass. Use a freshly named test database. The original populated v2 lab has a separate protected final upgrade receipt.
+
+
+## Reviewed-workflow recovery diagnosis
+
+Treat human state separately from machine case status. A pending generation, stale recommendation, revoked author/reviewer assignment, disabled verifier, expired receipt, changed manifest/checker or latest negative result blocks closure; it must not be repaired by manually setting a closed/verified flag. Additions to source provenance invalidate prior authority in the same ingestion transaction. Inspect immutable transitions/audit and the current effective binding. After a material change to a previously closed exercise, publish the current generation and use the explicit reviewer reopen flow with a reason. A new merged case requires fresh grants and scoped verifier authority.
+
+A verifier process can lose its acknowledgment before or after commit. Retry the same bounded run reference: an uncommitted request/receipt/audit rolls back; a matching committed request returns its retained receipt once. Conflicting replay fails. The CLI cannot accept a supplied verdict. If installed checker bytes differ from the pinned source digest, preserve existing receipts and provision explicitly reviewed new authority; never update old receipt/source fingerprints to accept new code silently.
+
+Binary restore acceptance includes recommendation versions, approvals/rejections, requests, verified/negative receipts, closures, invalidation/reopen history, sessions/grants and all originals. Restore may not reactivate stale authority: run catalog/store verification, actual restricted SQL denials and the real local HTTPS smoke only after security reconstruction. The maintenance and verifier credentials must remain separate from web configuration. No source-authentication, host power-loss, cross-host or live incident-response guarantee follows from these tests.
+
+
+## One-CPU resource policy and the observed stress incident
+
+Run complete local PostgreSQL suites sequentially. Independent transactional concurrency/race tests remain enabled inside each suite. Application connections explicitly set `max_parallel_workers_per_gather=0` and `max_parallel_maintenance_workers=0`, keeping per-query and utility parallel workers out of the bounded one-CPU lab. This is separate from allowing two independent transactions to contend on locks. Literal server GUC tests prove the policy and environment-override resistance. See [PostgreSQL17 resource settings](https://www.postgresql.org/docs/17/runtime-config-resource.html).
+
+An initial attempt to run both complete Python-version database suites simultaneously exhausted the container's64MiB POSIX shared memory (two32MiB resize failures), followed by a PostgreSQL17.11 backend SIGSEGV and recovery. The logged active statement was the unchanged002 migration. Cgroup records showed no OOM kill, but heavy memory reclaim; no native core was available, so the native crash cause remains unproven. Do not describe the resource mitigation as an engine crash fix or claim those failed runs passed.
+
+The existing volume/databases were retained. A temporary768MiB limit was applied while recovery was assessed; the original512MiB cap was restored without reset/deletion/restart. The retained v2 catalog matched its original receipt, and compressed/content hashes verified before further work. Failed sanitized execution receipts remain private under `.tools/receipts/*-parallel-stress-failed.json`. Subsequent acceptance uses fresh named databases and sequential full runs. This incident remains a documented local stress/recovery limitation, not evidence of host power-loss durability or production readiness.
+
+Final Phase1A-3B acceptance also uses a separately named local cluster, `cloudsecops-live-phase1a3b-acceptance`, on `127.0.0.1:55433`, with the same pinned17.11 image,1CPU,512MiB memory and64MiB shared memory. Its private test credential and retained volume are separate from the existing lab on55432; no original credential, database or volume is reset. Complete Python-version database suites run sequentially. A clean-cluster success does not establish the cause of the earlier native crash. The existing populated v2 lab receives its own protected backup, receipt comparison and forward upgrade verification.

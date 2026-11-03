@@ -20,6 +20,12 @@ SECURITY = (
     "workspace_config",
     "workspace_tls",
     "workspace_cli",
+    "workflow_store",
+    "workflow_web",
+    "independent_verifier",
+    "verifier_runtime",
+    "verifier_cli",
+    "pipeline_roles",
 )
 
 

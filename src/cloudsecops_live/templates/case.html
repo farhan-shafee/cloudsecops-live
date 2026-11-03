@@ -1,4 +1,5 @@
 {% extends "base.html" %}{% block content %}<main><h2>Investigation {{ case.case_id }}</h2>
+<p><a href="/cases/{{ case.case_id }}/workflow">Human recommendation, review and synthetic exercise closure</a></p>
 <p>Status: {{ case.status }}. Displayed revision {{ case.revision }}; current revision {{ case.current_revision }}.</p>
 <h3>Detection rationale</h3><p>{{ case.payload.rationale }}</p>
 <p>Rule {{ case.payload.rule_id }} version {{ case.payload.rule_version }}; ATT&amp;CK {{ case.payload.attack.technique_id }} — {{ case.payload.attack.name }}.</p>

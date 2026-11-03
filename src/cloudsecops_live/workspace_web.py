@@ -181,7 +181,7 @@ async def _form(request: Request, fields: set[str]) -> dict[str, str]:
             text,
             keep_blank_values=True,
             strict_parsing=True,
-            max_num_fields=6,
+            max_num_fields=min(len(fields), 10),
             encoding="utf-8",
             errors="strict",
         )
@@ -427,4 +427,7 @@ def create_app(config: WorkspaceConfig) -> FastAPI:
         )
         return RedirectResponse("/cases/" + case_id, status_code=303)
 
+    from cloudsecops_live.workflow_web import install_workflow_routes
+
+    install_workflow_routes(app, principal=principal, navigation=navigation)
     return app

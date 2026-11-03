@@ -49,6 +49,18 @@ TABLES = (
     "ws_throttle",
     "ws_case_grants",
     "ws_notes",
+    "ws_workflows",
+    "ws_recommendations",
+    "ws_reviews",
+    "ws_verifiers",
+    "ws_verifier_grants",
+    "ws_verification_requests",
+    "ws_verifications",
+    "ws_closures",
+    "ws_transitions",
+    "ws_workflow_csrf",
+    "ws_pipeline_identities",
+    "ws_pipeline_batches",
 )
 
 
@@ -154,7 +166,17 @@ def test_nul_batches_quarantine_without_any_partial_or_existing_state_change(
                     path.write_bytes(data)
                     paths.append(str(path))
                 assert (
-                    main(["db-ingest", "--config", str(config), "--checkpoint", checkpoint, *paths])
+                    main(
+                        [
+                            "db-ingest",
+                            "--maintenance",
+                            "--config",
+                            str(config),
+                            "--checkpoint",
+                            checkpoint,
+                            *paths,
+                        ]
+                    )
                     == 2
                 )
                 output = capsys.readouterr()
@@ -203,7 +225,17 @@ def test_invalid_encoding_preserves_source_reason_and_safe_quarantine_code(
         source = tmp_path / "private-source.json.gz"
         source.write_bytes(payload)
         assert (
-            main(["db-ingest", "--config", str(config), "--checkpoint", checkpoint, str(source)])
+            main(
+                [
+                    "db-ingest",
+                    "--maintenance",
+                    "--config",
+                    str(config),
+                    "--checkpoint",
+                    checkpoint,
+                    str(source),
+                ]
+            )
             == 2
         )
         output = capsys.readouterr()
