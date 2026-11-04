@@ -84,6 +84,18 @@ PUBLIC_REASONS = {
     "journal_full",
     "journal_invalid_transition",
 }
+PUBLIC_REASONS |= {
+    "INVALID_CAPACITY_OBSERVATION_" + stage
+    for stage in (
+        "DATA_FILESYSTEM",
+        "SHARED_FILESYSTEM",
+        "MEMORY_COUNTERS",
+        "MEMORY_EVENTS",
+        "PID_CPU",
+        "BACKING_DISK",
+        "RESULT_FIELDS",
+    )
+}
 
 
 def run_private(command: list[str], diagnostic: Path) -> int:

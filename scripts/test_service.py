@@ -203,18 +203,25 @@ def observe(root: Path, service: ServiceContract) -> dict[str, int]:
         raise CapacityError("TEST_SERVICE_IDENTITY_MISMATCH")
     text = _run(root, ["exec", service.container_id, "sh", "-c", PROBE])
     lines = text.splitlines()
+    stage = "DATA_FILESYSTEM"
     try:
         # df emits one header and two filesystem lines; busybox wraps long names
         # on some platforms, so obtain numeric rows by their mountpoint.
         data = next(line.split() for line in lines if line.endswith(" /var/lib/postgresql/data"))
+        stage = "SHARED_FILESYSTEM"
         shm = next(line.split() for line in lines if line.endswith(" /dev/shm"))
         df_end = max(i for i, line in enumerate(lines) if line.endswith(" /dev/shm"))
         tail = lines[df_end + 1 :]
+        stage = "MEMORY_COUNTERS"
         memory_limit, memory_current = int(tail[0]), int(tail[1])
+        stage = "MEMORY_EVENTS"
         pairs = {parts[0]: int(parts[1]) for line in tail[2:-3] if len(parts := line.split()) == 2}
+        stage = "PID_CPU"
         pids_current, pids_limit = int(tail[-3]), int(tail[-2])
         quota, period = (int(part) for part in tail[-1].split())
+        stage = "BACKING_DISK"
         backing = shutil.disk_usage("/var/lib/docker").free
+        stage = "RESULT_FIELDS"
         result = {
             "data_free_bytes": int(data[-3]) * 1024,
             "shm_free_bytes": int(shm[-3]) * 1024,
@@ -229,7 +236,7 @@ def observe(root: Path, service: ServiceContract) -> dict[str, int]:
             "cpu_period": period,
         }
     except (ValueError, KeyError, IndexError, StopIteration, OSError):
-        raise CapacityError("INVALID_CAPACITY_OBSERVATION") from None
+        raise CapacityError("INVALID_CAPACITY_OBSERVATION_" + stage) from None
     return result
 
 
