@@ -2,11 +2,17 @@
 
 Acquisition metadata is a future implementation contract, not an invented AWS response schema. STS GetCallerIdentity does not return region or expiry; those must be bound to the configured client and credential provider. S3 GetObject does not return an authoritative owner-account field: the future transport must send ExpectedBucketOwner, retain evidence of that successful request guard, and reconcile actual returned VersionId, size and modification metadata. Current ObjectBody.owner_account is only a controlled transport observation. These fields cannot independently authenticate a source. [S3 GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
 
-Status: Phase1B-AWS-0 offline source preparation, 2026-11-03. The implementation has no
-AWS SDK, credential discovery, sign-in, AWS subprocess or network transport. It accepts
+Status: Phase1B-AWS-1 offline preparation, 2026-11-03. This pure package has no
+AWS SDK, credential discovery, sign-in, AWS subprocess or network imports. It accepts
 AWS-shaped bytes and controlled in-memory service observations. It cannot authenticate a
 real AWS source, produce trusted findings, create a reviewed case or authorize closure.
 Offline implementation permission is not permission for later AWS access or provisioning.
+
+A separate `integrations/aws_sdk` package now implements the injected-client transport.
+It neither constructs clients nor exposes a live command. Its controlled SDK responses
+retain this package's unverified types. [CLI receipt preparation](AWS_CLI_RECEIPT_CONTRACT.md)
+does not execute validation or supply authenticity. Future source intake remains gated by
+[owner decisions](../AWS_LIVE_READINESS.md) and independently verified signed membership.
 
 Read with the [operations guide](../AWS_OFFLINE_OPERATIONS.md),
 [infrastructure source](../../infra/aws-offline/README.md),

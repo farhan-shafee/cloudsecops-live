@@ -69,11 +69,14 @@ class RetryableReadError(Exception):
 
 
 class ReadTransport(Protocol):
-    """Future implementation must bound network time/body allocation before returning.
+    """Implementations must bound response allocation and configure finite I/O timeouts.
 
     STS does not return a region or expiry: those observations must come from the
     explicitly configured regional client and short-session credential provider.
-    No concrete AWS implementation exists in this milestone.
+    The separate injected SDK adapter creates no clients or live entry point.
+    Its byte limits and lease checks do not provide hard cancellation during DNS,
+    response-header or chunk-header parsing. A separately approved cancellable
+    live runner is still required; per-I/O timeouts are not a total deadline.
     """
 
     def caller_identity(self) -> CallerIdentity: ...

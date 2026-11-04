@@ -34,6 +34,10 @@ AWS_OFFLINE = (
     "integrations/aws_cloudtrail/validation",
     "integrations/aws_cloudtrail/demo",
 )
+AWS_GUARDED = (
+    "integrations/aws_sdk/transport",
+    "integrations/aws_cloudtrail/cli_receipts",
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -79,6 +83,7 @@ def main() -> int:
     parser.add_argument("--require-durable", action="store_true")
     parser.add_argument("--require-security", action="store_true")
     parser.add_argument("--require-aws", action="store_true")
+    parser.add_argument("--require-aws1", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -128,8 +133,13 @@ def main() -> int:
                 _, branches = percentages([summary])
                 print(f"{module}.py: branch {branches:.2f}% (required >=85%)")
                 passed &= branches >= 85
-        if options.require_aws:
-            for module in AWS_OFFLINE:
+        for enabled, modules in (
+            (options.require_aws, AWS_OFFLINE),
+            (options.require_aws1, AWS_GUARDED),
+        ):
+            if not enabled:
+                continue
+            for module in modules:
                 summary = module_summary(files, module)
                 if summary["num_branches"] <= 0 or summary["covered_lines"] <= 0:
                     raise ValueError("required AWS contract module was not executed")

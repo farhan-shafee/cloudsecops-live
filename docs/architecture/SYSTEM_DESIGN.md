@@ -1,5 +1,15 @@
 # System design
 
+Phase1B-AWS-1 adds a separate `integrations/aws_sdk` implementation of the offline
+`ReadTransport` protocol. It accepts checked injected clients and a short explicit lease;
+there is no client/session factory, ambient discovery or live entry point. The pure
+`aws_cloudtrail` package retains its SDK/network import prohibition. Fixed-version CLI
+receipt preparation reconciles controlled observations only. No authenticated-source
+constructor, persistence migration or route to synthetic workflow authority exists.
+See [receipt contract](AWS_CLI_RECEIPT_CONTRACT.md), [implementation plan](../PHASE1B_AWS1_PLAN.md)
+and [unresolved owner decisions](../AWS_LIVE_READINESS.md). Existing synthetic authority,
+case/review/verification/closure and migrations001–003 are unchanged.
+
 Phase1B-AWS-0 adds a separate [offline AWS source boundary](AWS_OFFLINE_SOURCE.md) before capacity-blocked Wazuh work. Its AWS-shaped derivatives are distinct from accepted synthetic event types; authentication remains unavailable even for consistent controlled receipts. The architecture below remains the future live target. No trusted AWS finding, live verifier authority or database migration is supplied by this preparation.
 
 Status: full target architecture, 2026-11-03. Phase 1A-1 implements only the [offline synthetic evidence/detection foundation](../OFFLINE_FOUNDATION.md). Phase 1A-2 adds [local durable evidence, jobs and unreviewed cases](PERSISTENCE_CONTRACTS.md). Phase 1A-3A adds the [authenticated local workspace](ANALYST_WORKSPACE.md), assigned-case access and auditable analyst notes. Phase 1A-3B implements [evidence-bound synthetic no-action review, independent local consistency verification and guarded exercise closure](REVIEWED_WORKFLOW.md). Live authenticity, SIEM, cloud response and the complete authentic vertical slice below remain proposed. Read with the [reuse audit](REUSE_AUDIT.md), [threat model](THREAT_MODEL.md), [cost plan](CLOUD_COST_AND_SAFETY.md), and [delivery gates](../DELIVERY_ROADMAP.md).

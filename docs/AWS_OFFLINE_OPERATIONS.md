@@ -1,5 +1,49 @@
 # Offline AWS foundation operations
 
+## Phase1B-AWS-1 guarded adapter
+
+The new `integrations/aws_sdk` package implements the read transport through injected
+STS/S3/CloudTrail clients only. No default session, credential lookup, client factory or
+live command is supplied. Importing the existing offline demonstration remains SDK-free.
+Use the hash-locked README setup, then:
+
+```text
+python -m pytest tests/test_aws_sdk_transport.py tests/test_aws_cli_receipts.py tests/test_aws1_boundaries.py -q
+python -m cloudsecops_live.integrations.aws_cloudtrail
+```
+
+Only explicit static temporary credentials shared by all three clients are compatible;
+the adapter checks pinned botocore fields for credential binding, TLS verification,
+regional HTTPS, bounded timeouts, no proxies and one SDK attempt. The collector retains
+its own bounded retry policy. These implementation checks require re-review on SDK
+upgrade and are not proof of operator authorization. No real credentials are needed for
+tests; the real SDK client test uses generated fictional credentials under Stubber and
+socket denial. Never adapt these tests into an unauthorized live command.
+
+Configured per-I/O timeouts and lease checks do not provide hard cancellation during
+DNS, response-header parsing or individual chunk-header reads. Future live client
+assembly must separately enforce a process/operation deadline; no wall-clock guarantee
+is claimed by this synchronous injected adapter. The raw body is separately bounded
+before SDK parsing, including non-streaming control responses.
+
+`inspect_trail` uses only GetTrail/GetTrailStatus/GetEventSelectors/GetInsightSelectors.
+The prepared Terraform collector role lacks the last action; the verifier role has it.
+Inspection must use an explicitly approved scope/role with every required permission or
+fail closed. This milestone does not broaden Terraform/IAM. A modeled Insights-disabled
+response is recorded distinctly; generic denial/error responses never become empty success.
+
+The pure [CLI receipt parser](architecture/AWS_CLI_RECEIPT_CONTRACT.md) pins AWS CLI2.37.11
+verbose output and requires exact expected membership, raw controlled digest content,
+separate chain observations, retained hashes and before/after source versions. It never
+executes the CLI. Incomplete/unsupported observations stay untrusted. Successful byte
+consistency remains `authenticated=false`, with no findings/closure authority.
+See [owner readiness](AWS_LIVE_READINESS.md) before requesting any future live operation.
+
+Runtime SDK dependencies boto3/botocore1.43.123 and s3transfer0.19.3 retain Apache-2.0;
+jmespath1.1.0, six1.17.0 and urllib3 retain MIT; python-dateutil2.9.0.post0 retains its
+Apache/BSD dual license. No SDK source was copied. Runtime/development locks include
+transitive hashes; CRT extras and credential-management tooling are absent.
+
 Status: Phase1B-AWS-0, 2026-11-03. This runbook operates only on generated local data and
 fake services. It grants no AWS sign-in, credential discovery, live API, infrastructure,
 Wazuh, deployment, paid-service or response permission. The separate

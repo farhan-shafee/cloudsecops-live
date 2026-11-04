@@ -1,6 +1,6 @@
 # CloudSecOps Live
 
-Phase1B-AWS-0 prepares the AWS boundary **offline only**, while Wazuh remains blocked by measured workstation memory limits. A separate bounded AWS-shaped parser, injected fake collection transport, exact-version/byte contracts, in-memory checkpoint reference and controlled digest-assessment tests remain unauthenticated. They cannot create trusted findings or close cases. No AWS client or credential discovery is included. The existing synthetic pipeline and migrations001–003 remain intact.
+Phase1B-AWS-1 adds an **offline-tested guarded SDK adapter** and fixed-version CLI receipt preparation, while Wazuh remains blocked by measured workstation memory limits. The adapter accepts explicitly configured injected clients; it creates no SDK sessions, discovers no credentials and exposes no live command. Tests use fake/Stubber clients with socket denial. AWS-shaped records and every prepared receipt remain unauthenticated and cannot create trusted findings or close cases. The synthetic pipeline and migrations001–003 remain intact. See the [owner live-readiness packet](docs/AWS_LIVE_READINESS.md), [implementation plan](docs/PHASE1B_AWS1_PLAN.md), [CLI receipt contract](docs/architecture/AWS_CLI_RECEIPT_CONTRACT.md) and [independent interview lab](docs/labs/PHASE1B_AWS1_INTERVIEW_LAB.md).
 
 After the hash-locked Python setup below, run the deterministic credential-free demonstration:
 
@@ -10,6 +10,14 @@ After the hash-locked Python setup below, run the deterministic credential-free 
 ```
 
 Expected: three AWS-shaped fixture events, `authenticated=false`, pending source authentication, controlled digest consistency and `AWS_AUTHENTICATION_UNAVAILABLE`. The Terraform command checks reviewed source structure/IAM assumptions only. Phase1B-AWS-0R adds a separate mandatory [native Terraform/provider gate](docs/TERRAFORM_NATIVE_VALIDATION.md) in credential-free disposable CI; its exact-head results must pass independently. Native schema compatibility does not prove effective IAM, service delivery or AWS evidence authenticity. See [AWS source design](docs/architecture/AWS_OFFLINE_SOURCE.md), [offline operations](docs/AWS_OFFLINE_OPERATIONS.md), [validation record](docs/PHASE1B_AWS_OFFLINE_VALIDATION.md), [Terraform preparation](infra/aws-offline/README.md) and [no-AI lab](docs/labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md).
+
+Run the new controlled failures without AWS access:
+
+```powershell
+.venv\Scripts\python.exe -m pytest tests/test_aws_sdk_transport.py tests/test_aws_cli_receipts.py tests/test_aws1_boundaries.py -q
+```
+
+PR#6 was normally merged at `da8fcbcde05a4e7a7e66e9c8efb26e892211d465` after verifying its exact authorized45-file head and nine successful PR jobs, including native Terraform. SDK/API success and CLI exit0 are not signed-source authentication. Live access, provisioning, test activity and cleanup each need separate owner authorization; no live work is authorized here.
 
 An AWS-first security engineering portfolio and training environment. The intended full workflow is:
 
@@ -101,6 +109,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-Phase 1A-3B implements only offline synthetic no-action review and local consistency verification. A verified receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Phase 1B requires a separate readiness/authorization decision for authentic collection, signed-digest binding, live IAM/safety/cost gates and feasible local SIEM resources. Wazuh, live AWS, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. Stop after the unmerged Phase 1A-3B review PR.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. The next eligible step is a separately authorized bounded read-only AWS readiness inspection after owner decisions, reviewed client assembly and current cost evidence. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The Phase1B-AWS-1 PR remains unmerged; no live exercise follows automatically.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

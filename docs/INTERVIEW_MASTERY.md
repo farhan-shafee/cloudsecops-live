@@ -1,5 +1,12 @@
 # Interview mastery and practical assessment
 
+Phase1B-AWS-1 adds a [guarded SDK and receipt practical lab](labs/PHASE1B_AWS1_INTERVIEW_LAB.md)
+using real code paths, fictional sessions, stubbed services and controlled failures.
+Assess IAM sessions, STS boundaries, version pagination, bucket-owner protection, chain
+membership, integrity versus authenticity and custody without AI or AWS access.
+Human scores remain NOT_RUN until independently observed. Passing offline tests does
+not establish live operational experience or resolve Wazuh/PostgreSQL readiness risks.
+
 Phase1B-AWS-0 adds the [offline AWS foundation lab](labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md): CloudTrail, IAM, S3 versions, hash domains, signed membership, pagination, identity/session correlation and failure handling. Human exercises remain **NOT_RUN** until completed without AI and independently scored. Fake transports and structural Terraform tests demonstrate software boundaries, not AWS operational experience, effective live IAM or SIEM deployment. Wazuh capacity and actual queryable-alert evidence remain separate unmet gates.
 
 Status: training plan with Phase 1A-1 through Phase 1A-3B executable practice available, 2026-11-03. **The human mastery assessment remains NOT_RUN.** Automated offline tests have run; local PostgreSQL integration/recovery tests are separate from live exercises, deployment or AWS actions, which remain unperformed. Passing software tests does not establish human mastery, a complete live platform or production experience.
