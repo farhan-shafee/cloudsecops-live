@@ -1,5 +1,7 @@
 # System design
 
+Phase1B-AWS-2 adds the [offline secure runner boundary](AWS_SECURE_RUNNER.md) for future trusted readiness workers. Native containment and a parent watchdog handle blocked network phases; identity, aggregate budget and CLI preflight contracts grant no AWS access or evidence trust. Existing ingestion, workflow and SQL authority are unchanged. Live assembly, signed authentication and capacity remain separately gated.
+
 Phase1B-AWS-1 adds a separate `integrations/aws_sdk` implementation of the offline
 `ReadTransport` protocol. It accepts checked injected clients and a short explicit lease;
 there is no client/session factory, ambient discovery or live entry point. The pure

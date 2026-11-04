@@ -1,5 +1,7 @@
 # Local failure and recovery runbook
 
+AWS2 failures are lifecycle observations only. A deadline/cancellation/protocol/budget failure returns no accepted payload; unconfirmed shutdown remains a failed security boundary. Retain the sanitized `IsolatedResult.to_public_dict()` and keep private worker responses out of logs/public artifacts. A delayed OS launch may need background cleanup; no future live work may start while cleanup is uncertain. See [runner limits](architecture/AWS_SECURE_RUNNER.md). No retained PostgreSQL resource or migration changes; local full-suite acceptance remains NO-GO and must use the disposable hosted service.
+
 ## Phase1B-OPS-1: stop local acceptance and preserve provenance
 
 The current retained workstation cluster remains **NO-GO** for complete PostgreSQL

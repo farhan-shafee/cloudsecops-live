@@ -1,18 +1,22 @@
 # CloudSecOps Live
 
+Phase1B-AWS-2 adds offline **process-isolated runner preparation**: a monotonic parent watchdog, owned-tree cleanup, explicit temporary-identity contracts, aggregate read-only SDK budgets and disabled AWS CLI2.37.11 preflight. It exposes no live command or credential/AWS access. See [runner architecture](docs/architecture/AWS_SECURE_RUNNER.md), [implementation plan](docs/PHASE1B_AWS2_PLAN.md) and [no-AI lab](docs/labs/PHASE1B_AWS2_INTERVIEW_LAB.md). Every prepared receipt remains unauthenticated; live assembly and signed-source authentication require separate gates.
+
+Starting main is PR#8 merge `5e860dffb3e13b82121afa8e7b82e8d43a2ad639`, tree `ec98d22dafb0eb1a1d2a2f72d9e5b95588d98b79`. Its active ruleset requires ten CI checks, PRs and resolved conversations; it currently requires zero approving reviews. Historical OPS1 delivery wording below is superseded by this checkpoint. Retained PostgreSQL and Wazuh remain **NO-GO**; no local database acceptance is authorized.
+
 Phase1B-OPS-1 adds a **fail-closed disposable-CI test harness** with cluster-wide capacity
 checks, connection-disabled database creation and a private durable provenance journal.
 It rejects local enrollment and implicit DSN fallback before a database connection.
 The retained workstation cluster remains blocked; no retained database or role is
 modified, and no cleanup, restart or resource increase is supplied. See the
 [safety and capacity contract](docs/PHASE1B_OPS1_SAFETY.md) and
-[GitHub governance assessment](docs/TEST_HARNESS_GOVERNANCE.md). New exact-head CI,
-including the separate `PostgreSQL harness safety` job, and independent review remain
-pending until executed and inspected; a workflow definition is not a passing run.
+[GitHub governance assessment](docs/TEST_HARNESS_GOVERNANCE.md). Each subsequent revision
+requires fresh exact-head CI, including `PostgreSQL harness safety`, and review;
+a workflow definition is not a passing run.
 
 PR#7 was normally merged at `1400427df348b06f47e1415e8734aa82bf074305`, preserving
-reviewed tree `9fad3b5d56afbc4dfe610e08d26a6b39854267f0`. This milestone uses the separate
-`codex/phase1b-ops1-test-harness-safety` branch and will remain an unmerged review PR.
+reviewed tree `9fad3b5d56afbc4dfe610e08d26a6b39854267f0`. PR#8 subsequently merged the
+test-harness milestone at the starting checkpoint above. This AWS2 PR remains unmerged.
 The historical PostgreSQL SIGSEGV remains unexplained, and local full PostgreSQL suites
 remain **NO-GO**. Wazuh installation and live AWS activity remain unauthorized.
 
@@ -133,6 +137,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Review the test-harness correction and its isolated CI evidence first. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The Phase1B-OPS-1 PR must remain unmerged; no cleanup or live exercise follows automatically.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The AWS2 PR remains unmerged; no cleanup or live exercise follows automatically.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

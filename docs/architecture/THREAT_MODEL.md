@@ -1,5 +1,11 @@
 # Threat model
 
+## Phase1B-AWS-2 execution preparation
+
+The [runner](AWS_SECURE_RUNNER.md) separates hostile network stalls from the parent watchdog, gates imports until native containment, bounds JSON IPC and discards raw diagnostics. Work and forced owned-tree cleanup share one monotonic deadline. Unknown cleanup, late launch, cancellation and exhausted budgets cannot yield successful evidence. Role unique-ID/session/expiry/provenance and fixed read-only operation/source allowlists supplement existing credential/TLS guards. Aggregate budgets count failed calls and retries; response-body byte limits do not count TLS/header framing.
+
+Trusted worker code/import references, responsive OS scheduling/kernel and native dependencies remain trusted. Linux groups do not contain deliberate group escape; Python socket guards are not an OS sandbox. No live registry or credential provider is activated. Effective admin policy behind a benign name, real issuance, CLI installation/internal-call bounds and exact signed-file authenticity remain live gates. Prepared receipts stay unauthenticated and outside synthetic closure. No database or infrastructure operation is authorized.
+
 ## Phase1B-AWS-1 transport and receipt boundary
 
 New risks include ambient credential resolution, stale temporary identity, regional

@@ -1,5 +1,13 @@
 # Delivery roadmap
 
+## Phase1B-AWS-2: offline secure runner preparation
+
+PR#8 is merged as `5e860dffb3e13b82121afa8e7b82e8d43a2ad639`, preserving tree `ec98d22dafb0eb1a1d2a2f72d9e5b95588d98b79`. Main now has an active ten-check ruleset; independent approving review is not enforced. Historical OPS1 publication/governance status below is superseded by this checkpoint.
+
+The dedicated AWS2 branch prepares native process containment, a monotonic work/cleanup deadline, strict temporary-identity observations, aggregate read-only SDK budgets and disabled CLI2.37.11 preflight. [Architecture](architecture/AWS_SECURE_RUNNER.md) states scheduling, trusted-worker, Linux group and binary-provenance limits. Offline receipts cannot establish source authentication, effective IAM or closure. Tests use fake clients and numeric-loopback faults; database acceptance remains in disposable sequential hosted CI. No migration or retained-resource changes occur.
+
+Next work requires separate owner authorization and real temporary issuance, effective IAM, a fixed live worker assembly, CLI provenance/internal-call bounds and the [readiness packet](AWS_LIVE_READINESS.md). Wazuh and retained PostgreSQL remain blocked. No live access, collection, provisioning or cleanup follows automatically.
+
 ## Phase1B-OPS-1: fail-closed test harness and provenance
 
 The approved PR#7 head was normally merged as

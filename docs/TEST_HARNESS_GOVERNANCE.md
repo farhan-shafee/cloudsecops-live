@@ -5,6 +5,8 @@ change GitHub settings, grant merge permission or prove that a later revision pa
 
 ## Observed configuration
 
+AWS2 readback at 2026-11-04T18:03Z supersedes the historical table below: main is `5e860dffb3e13b82121afa8e7b82e8d43a2ad639`, tree `ec98d22dafb0eb1a1d2a2f72d9e5b95588d98b79`, and `protected=true`. Active ruleset [26545782](https://github.com/farhan-shafee/cloudsecops-live/rules/26545782) targets exactly main and requires all ten listed GitHub Actions contexts, strict up-to-date checks, a PR and resolved conversations. It blocks deletion/non-fast-forward updates and permits merge commits. Required approving reviews are **zero**; code-owner and most-recent-push approval are false. The independent-approval policy below is not enforced. Public readback omitted bypass actors and could not establish classic-protection details. This milestone changes no setting and grants no merge permission.
+
 On 2026-11-04 the connected GitHub read API returned the following for
 `farhan-shafee/cloudsecops-live`:
 

@@ -38,6 +38,17 @@ AWS_GUARDED = (
     "integrations/aws_sdk/transport",
     "integrations/aws_cloudtrail/cli_receipts",
 )
+AWS_RUNNER = (
+    "integrations/aws_runner/contracts",
+    "integrations/aws_runner/cli_preflight",
+    "integrations/aws_runner/sdk_budget",
+    "integrations/aws_runner/process",
+)
+AWS_RUNNER_PLATFORM = (
+    "integrations/aws_runner/bootstrap",
+    "integrations/aws_runner/network",
+    "integrations/aws_runner/containment",
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -84,6 +95,7 @@ def main() -> int:
     parser.add_argument("--require-security", action="store_true")
     parser.add_argument("--require-aws", action="store_true")
     parser.add_argument("--require-aws1", action="store_true")
+    parser.add_argument("--require-aws2", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -136,6 +148,7 @@ def main() -> int:
         for enabled, modules in (
             (options.require_aws, AWS_OFFLINE),
             (options.require_aws1, AWS_GUARDED),
+            (options.require_aws2, AWS_RUNNER),
         ):
             if not enabled:
                 continue
@@ -146,6 +159,16 @@ def main() -> int:
                 _, branches = percentages([summary])
                 print(f"{module}.py: branch {branches:.2f}% (required >=85%)")
                 passed &= branches >= 85
+        if options.require_aws2:
+            for module in AWS_RUNNER_PLATFORM:
+                summary = module_summary(files, module)
+                if summary["num_branches"] <= 0:
+                    raise ValueError("required platform branch measurement unavailable")
+                platform_lines, platform_branches = percentages([summary])
+                print(
+                    f"{module}.py: lines {platform_lines:.2f}%, branches {platform_branches:.2f}% "
+                    "(reported; native acceptance separate)"
+                )
         return 0 if passed and lines >= 90 else 1
     except (OSError, ValueError, KeyError, TypeError, ZeroDivisionError):
         print("Coverage gate failed: required coverage evidence unavailable.", file=sys.stderr)
