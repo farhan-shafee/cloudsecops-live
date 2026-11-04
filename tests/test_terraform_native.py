@@ -788,7 +788,7 @@ def test_signature_success_requires_exact_pinned_primary_fingerprint(
     def fake_process(command, cwd, environment, logs, label, timeout):
         if "--show-keys" in command:
             return (
-                "pub:-:4096:1:34365D9472D7468F:1::::::scSC:\n"
+                "pub:-:4096:1:34365D9472D7468F:1617049246:1898637264:::::scSC:\n"
                 "fpr:::::::::C874011F0AB405110D02105534365D9472D7468F:\n",
                 0,
             )
@@ -812,7 +812,7 @@ def test_signature_verifier_uses_private_keyring_and_disables_ambient_options_an
         commands.append((command, env))
         if "--show-keys" in command:
             return (
-                "pub:-:4096:1:34365D9472D7468F:1::::::scSC:\n"
+                "pub:-:4096:1:34365D9472D7468F:1617049246:1898637264:::::scSC:\n"
                 "fpr:::::::::C874011F0AB405110D02105534365D9472D7468F:\n",
                 0,
             )
@@ -852,6 +852,146 @@ def test_wrong_signing_key_is_rejected_before_import_or_verification(
         native._verify_signatures(tmp_path, {}, [(tmp_path / "SUMS", tmp_path / "SUMS.sig")])
     assert len(observed) == 1
     assert "--show-keys" in observed[0]
+
+
+@pytest.fixture
+def vendor_key_listing() -> str:
+    """Public vendor keyring: expired retired subkey plus valid selected subkey."""
+    return (
+        "pub:-:4096:1:34365D9472D7468F:1617049246:1898637264:::::scSC:\n"
+        "fpr:::::::::C874011F0AB405110D02105534365D9472D7468F:\n"
+        "sub:e:4096:1:B0B441097685B676:1587338112:1650413312:::::s:\n"
+        "fpr:::::::::B36CBA91A2C0730C435FC280B0B441097685B676:\n"
+        "sub:-:4096:1:C820C6D5CD27AB87:1740870922:1898637322:::::s:\n"
+        "fpr:::::::::374EC75B485913604A831CC7C820C6D5CD27AB87:\n"
+    )
+
+
+@pytest.fixture
+def vendor_signature_status() -> str:
+    """GPG reports old-key expiry even when a current subkey signed correctly."""
+    return (
+        "[GNUPG:] NEWSIG\n"
+        "[GNUPG:] KEY_CONSIDERED C874011F0AB405110D02105534365D9472D7468F 0\n"
+        "[GNUPG:] KEYEXPIRED 1650413312\n"
+        "[GNUPG:] GOODSIG C820C6D5CD27AB87 HashiCorp Security\n"
+        "[GNUPG:] VALIDSIG 374EC75B485913604A831CC7C820C6D5CD27AB87 "
+        "2026-10-15 1792022400 0 4 0 1 10 00 C874011F0AB405110D02105534365D9472D7468F\n"
+        "[GNUPG:] TRUST_UNDEFINED 0 pgp\n"
+    )
+
+
+def signature_protocol_double(native, monkeypatch, key_listing: str, signature_status: str) -> None:
+    """Replace GPG execution only; run the real key/status binding checks."""
+
+    def fake_process(command, cwd, env, logs, label, timeout):
+        if "--show-keys" in command:
+            return key_listing, 0
+        if "--verify" in command:
+            return signature_status, 0
+        if "--import" in command:
+            return "", 0
+        pytest.fail("unexpected GPG operation")
+
+    monkeypatch.setattr(native, "_process", fake_process)
+    monkeypatch.setattr(native.time, "time", lambda: 1793664000)
+
+
+def test_retired_unselected_key_expiry_does_not_reject_current_vendor_signature(
+    native, monkeypatch, tmp_path: Path, vendor_key_listing: str, vendor_signature_status: str
+) -> None:
+    signature_protocol_double(native, monkeypatch, vendor_key_listing, vendor_signature_status)
+    result = native._verify_signatures(tmp_path, {}, [(tmp_path / "SUMS", tmp_path / "SUMS.sig")])
+    assert result["signing_fingerprint"] == (
+        "C874011F0AB405110D02105534365D9472D7468F"  # pragma: allowlist secret - public PGP
+    )
+    assert result["selected_signer_fingerprints"] == [
+        "374EC75B485913604A831CC7C820C6D5CD27AB87"  # pragma: allowlist secret - public PGP
+    ]
+    assert result["ignored_retired_expiry_count"] == 1
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        (
+            "sub:-:4096:1:C820C6D5CD27AB87:1740870922:1898637322",
+            "sub:e:4096:1:C820C6D5CD27AB87:1740870922:1650413312",
+        ),
+        (
+            "sub:-:4096:1:C820C6D5CD27AB87:1740870922:1898637322",
+            "sub:-:4096:1:C820C6D5CD27AB87:1587338112:1650413312",
+        ),
+        (
+            "sub:-:4096:1:C820C6D5CD27AB87:1740870922:1898637322",
+            "sub:r:4096:1:C820C6D5CD27AB87:1740870922:1898637322",
+        ),
+        (
+            "pub:-:4096:1:34365D9472D7468F:1617049246:1898637264",
+            "pub:e:4096:1:34365D9472D7468F:1617049246:1650413312",
+        ),
+        (
+            "pub:-:4096:1:34365D9472D7468F:1617049246:1898637264",
+            "pub:-:4096:1:34365D9472D7468F:1617049246:1650413312",
+        ),
+        (
+            "pub:-:4096:1:34365D9472D7468F:1617049246:1898637264",
+            "pub:r:4096:1:34365D9472D7468F:1617049246:1898637264",
+        ),
+        (
+            "sub:-:4096:1:C820C6D5CD27AB87:1740870922:1898637322:::::s:\n"
+            "fpr:::::::::374EC75B485913604A831CC7C820C6D5CD27AB87:\n",
+            "",
+        ),
+    ],
+)
+def test_expired_revoked_or_missing_selected_key_or_primary_never_uses_retired_key_exception(
+    native,
+    monkeypatch,
+    tmp_path: Path,
+    vendor_key_listing: str,
+    vendor_signature_status: str,
+    old: str,
+    new: str,
+) -> None:
+    signature_protocol_double(
+        native, monkeypatch, vendor_key_listing.replace(old, new), vendor_signature_status
+    )
+    with pytest.raises(native.NativeError) as failure:
+        native._verify_signatures(tmp_path, {}, [(tmp_path / "SUMS", tmp_path / "SUMS.sig")])
+    assert str(failure.value) == "signature_failed"
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("KEYEXPIRED 1650413312", "KEYEXPIRED 1710000000"),
+        ("KEYEXPIRED 1650413312", "KEYEXPIRED 1898637322"),
+        ("KEYEXPIRED 1650413312", "KEYEXPIRED unparseable"),
+        ("KEYEXPIRED 1650413312", "KEYREVOKED"),
+        ("KEYEXPIRED 1650413312", "EXPKEYSIG C820C6D5CD27AB87 HashiCorp Security"),
+        ("KEYEXPIRED 1650413312", "REVKEYSIG C820C6D5CD27AB87 HashiCorp Security"),
+        (
+            "VALIDSIG 374EC75B485913604A831CC7C820C6D5CD27AB87",
+            "VALIDSIG EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+        ),
+    ],
+)
+def test_unknown_expiry_or_selected_signer_failures_remain_fatal(
+    native,
+    monkeypatch,
+    tmp_path: Path,
+    vendor_key_listing: str,
+    vendor_signature_status: str,
+    old: str,
+    new: str,
+) -> None:
+    signature_protocol_double(
+        native, monkeypatch, vendor_key_listing, vendor_signature_status.replace(old, new)
+    )
+    with pytest.raises(native.NativeError) as failure:
+        native._verify_signatures(tmp_path, {}, [(tmp_path / "SUMS", tmp_path / "SUMS.sig")])
+    assert str(failure.value) == "signature_failed"
 
 
 @pytest.mark.parametrize(

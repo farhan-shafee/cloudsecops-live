@@ -567,7 +567,9 @@ def _terraform(
         raise
 
 
-def _verify_signatures(work: Path, env: dict[str, str], manifests: list[tuple[Path, Path]]) -> str:
+def _verify_signatures(
+    work: Path, env: dict[str, str], manifests: list[tuple[Path, Path]]
+) -> dict[str, Any]:
     keydir = work / "gnupg"
     keydir.mkdir(mode=0o700)
 
@@ -590,24 +592,53 @@ def _verify_signatures(work: Path, env: dict[str, str], manifests: list[tuple[Pa
 
     key = work / "hashicorp.asc"
     listing = gpg("inspect", [key], "key-inspect")
-    fingerprints: list[str] = []
-    primary = False
+    keys: dict[str, dict[str, Any]] = {}
+    pending: dict[str, Any] | None = None
     for line in listing.splitlines():
         fields = line.split(":")
         if fields[0] in {"pub", "sub"}:
-            if fields[0] == "pub":
-                _require(
-                    len(fields) > 1 and fields[1] not in {"e", "r", "d", "i"},
-                    "signature_failed",
-                    "signature",
-                )
-            primary = fields[0] == "pub"
-        elif fields[0] == "fpr" and primary:
-            _require(len(fields) > 9, "signature_failed")
-            fingerprints.append(fields[9])
-            primary = False
-    _require(fingerprints == [SIGNING_FINGERPRINT], "signature_failed")
+            _require(pending is None and len(fields) > 6, "signature_failed", "signature")
+            pending = {
+                "kind": fields[0],
+                "validity": fields[1],
+                "expires": int(fields[6]) if re.fullmatch(r"[0-9]{1,12}", fields[6]) else None,
+            }
+        elif fields[0] == "fpr":
+            _require(
+                pending is not None
+                and len(fields) > 9
+                and re.fullmatch(r"[0-9A-F]{40}", fields[9]) is not None
+                and fields[9] not in keys,
+                "signature_failed",
+                "signature",
+            )
+            assert pending is not None
+            keys[fields[9]] = pending
+            pending = None
+    _require(
+        pending is None
+        and [fingerprint for fingerprint, metadata in keys.items() if metadata["kind"] == "pub"]
+        == [SIGNING_FINGERPRINT],
+        "signature_failed",
+        "signature",
+    )
+    now = time.time()
+
+    def require_current(fingerprint: str) -> None:
+        metadata = keys.get(fingerprint)
+        _require(
+            metadata is not None
+            and metadata["validity"] in {"-", "o", "q", "n", "m", "f", "u"}
+            and type(metadata["expires"]) is int
+            and metadata["expires"] > now,
+            "signature_failed",
+            "signature",
+        )
+
+    require_current(SIGNING_FINGERPRINT)
     gpg("import", [key], "key-import")
+    selected_signers: set[str] = set()
+    ignored_retired_expiry_count = 0
     for index, (manifest, signature) in enumerate(manifests):
         status = gpg("verify", [signature, manifest], f"signature-{index}")
         bad = {
@@ -616,17 +647,24 @@ def _verify_signatures(work: Path, env: dict[str, str], manifests: list[tuple[Pa
             "EXPSIG",
             "EXPKEYSIG",
             "REVKEYSIG",
-            "KEYEXPIRED",
             "KEYREVOKED",
             "SIGEXPIRED",
             "FAILURE",
             "NODATA",
             "ERROR",
         }
+        expired: list[int] = []
         for line in status.splitlines():
             if line.startswith("[GNUPG:] "):
                 fields = line.split()
                 _require(len(fields) >= 2 and fields[1] not in bad, "signature_failed", "signature")
+                if fields[1] == "KEYEXPIRED":
+                    _require(
+                        len(fields) == 3 and re.fullmatch(r"[0-9]{1,12}", fields[2]) is not None,
+                        "signature_failed",
+                        "signature",
+                    )
+                    expired.append(int(fields[2]))
         signatures = [
             line.split() for line in status.splitlines() if line.startswith("[GNUPG:] VALIDSIG ")
         ]
@@ -637,8 +675,34 @@ def _verify_signatures(work: Path, env: dict[str, str], manifests: list[tuple[Pa
             "signature_failed",
         )
         _require(signatures[0][9] in {"8", "9", "10", "11"}, "signature_failed", "signature")
+        signer = signatures[0][2]
+        require_current(signer)
+        selected_signers.add(signer)
+        # GPG may emit KEYEXPIRED for a retired subkey while successfully
+        # verifying with another current subkey. Bind that warning to known
+        # metadata; an unknown expiry or expiry of either active key fails.
+        active_expiries = {keys[SIGNING_FINGERPRINT]["expires"], keys[signer]["expires"]}
+        retired_expiries = {
+            metadata["expires"]
+            for fingerprint, metadata in keys.items()
+            if metadata["kind"] == "sub"
+            and fingerprint not in {SIGNING_FINGERPRINT, signer}
+            and metadata["validity"] == "e"
+            and type(metadata["expires"]) is int
+            and 0 < metadata["expires"] <= now
+        }
+        _require(
+            all(expiry in retired_expiries and expiry not in active_expiries for expiry in expired),
+            "signature_failed",
+            "signature",
+        )
+        ignored_retired_expiry_count += len(expired)
     _require(bool(manifests), "signature_failed", "signature")
-    return SIGNING_FINGERPRINT
+    return {
+        "signing_fingerprint": SIGNING_FINGERPRINT,
+        "selected_signer_fingerprints": sorted(selected_signers),
+        "ignored_retired_expiry_count": ignored_retired_expiry_count,
+    }
 
 
 def _archive_binary(path: Path, name: str, limit: int, destination: Path | None = None) -> str:
@@ -699,7 +763,7 @@ def _toolchain(work: Path, env: dict[str, str]) -> tuple[Path, str, str, dict[st
         _download(base + manifest.name, manifest, MIB)
         _download(base + signature.name, signature, 64 * 1024)
         manifests.append((manifest, signature))
-    fingerprint = _verify_signatures(work, env, manifests)
+    signature_bindings = _verify_signatures(work, env, manifests)
     for (product, version), (manifest, _) in zip(
         (("terraform", TERRAFORM_VERSION), ("terraform-provider-aws", PROVIDER_VERSION)),
         manifests,
@@ -725,7 +789,7 @@ def _toolchain(work: Path, env: dict[str, str]) -> tuple[Path, str, str, dict[st
     )
     observations = {
         "signatures_verified": True,
-        "signing_fingerprint": fingerprint,
+        **signature_bindings,
         "signed_manifest_sha256": {manifest.name: _sha256(manifest) for manifest, _ in manifests},
         "terraform_binary_sha256": cli_hash,
         "verified_archive_sha256": dict(ARCHIVE_HASHES),
