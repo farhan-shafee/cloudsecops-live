@@ -47,13 +47,15 @@ jobs:
         run: python -m ruff check .
       - name: Strict types
         run: python -m mypy
+      - name: Offline Terraform source and IAM policy contract (no provider or AWS calls)
+        run: python scripts/check_terraform.py
       - name: Offline tests with complete line and branch evidence
         # All modules remain in the report, including unexecuted PostgreSQL paths.
         # Preserve the original foundation line gate and ingestion/detection branch
         # gates explicitly; new durable coverage is measured in required DB jobs.
         run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Foundation line and actual ingestion/detection branch gates
-        run: python scripts/check_coverage.py
+        run: python scripts/check_coverage.py --require-aws
       - name: Secret and private identifier scan (no remote credential verification)
         run: python scripts/check_secrets.py
       - name: Build with locked backend
@@ -69,6 +71,8 @@ jobs:
           & $wheelPython -m pip install --no-deps --no-index $wheel[0].FullName
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $wheelPython -I -m cloudsecops_live --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $wheelPython -I -m cloudsecops_live.integrations.aws_cloudtrail
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $wheelCli = if ($IsWindows) { '.wheel-venv/Scripts/cloudsecops-live.exe' } else { '.wheel-venv/bin/cloudsecops-live' }
           & $wheelCli --help
@@ -91,6 +95,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         python: ["3.12", "3.14"]
     services:
@@ -131,7 +136,7 @@ jobs:
           CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: python scripts/run_integration.py --receipt .tools/ci-receipts/postgres-py${{ matrix.python }}.json -- --cov=cloudsecops_live --cov-append --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Preserve foundation gates and require actual security branches
-        run: python scripts/check_coverage.py --require-durable --require-security
+        run: python scripts/check_coverage.py --require-durable --require-security --require-aws
       - name: Retain sanitized database test and coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -144,6 +149,40 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+
+  native-terraform:
+    name: Native Terraform and provider security
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+          check-latest: false
+      - name: Independent structural source policy
+        run: python scripts/check_terraform.py
+      - name: Verified native toolchain and configuration gate
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          python -m scripts.terraform_native \
+            --source-revision "${{ github.sha }}" \
+            --work-parent "${{ runner.temp }}" \
+            --receipt .tools/ci-receipts/terraform-native.json
+      - name: Retain sanitized native verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: terraform-native-${{ github.sha }}
+          path: .tools/ci-receipts/terraform-native.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
 
   dependency-audit:
     strategy:

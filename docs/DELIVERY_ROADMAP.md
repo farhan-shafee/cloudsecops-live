@@ -1,5 +1,15 @@
 # Delivery roadmap
 
+## Phase1B-AWS-0: independent offline preparation before SIEM
+
+The owner explicitly reordered this independent milestone after PR#5 was normally merged as `7b8435f8e93c375f83501baace45468ee5e6e9c1`, preserving reviewed tree `c3c0eb17964d1002e71cfedae144140da1f49c7d`. Separate untrusted AWS-shaped parsing/collection contracts, controlled digest outcomes, fixed-region Terraform source/static checks and credential-free tests are implemented. No AWS SDK/client, credentials, live API, infrastructure, database migration or authentic finding/closure is introduced. [Architecture](architecture/AWS_OFFLINE_SOURCE.md), [operations](AWS_OFFLINE_OPERATIONS.md) and [lab](labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md) define the boundary.
+
+Phase1B-1 stopped before Wazuh installation or adapter implementation. The retained Phase1B-1R recheck measured six Windows available-RAM samples of5.588–5.900GiB, all below the required12GiB; Docker/WSL availability shares the same physical memory. Wazuh remains **NO-GO**. No application/container shutdown, resource reclamation, WSL change or rented-host fallback follows. Every actual SIEM decoder, persisted alert, authenticated query, retry/restart and stale-link acceptance requirement remains mandatory later.
+
+The prior PostgreSQL backend SIGSEGV followed shared-memory exhaustion under simultaneous complete suites. Its cause remains unproven. Ordinary supported regressions run sequentially; no stress reproduction or resource increase is authorized. A new backend crash stops work and preserves diagnostics.
+
+Next eligible work is further offline review/hardening and resolving tooling/IAM/source-authentication gates. Live AWS requires separate identity, effective-IAM, exact signed membership/version continuity, cost/retention/cleanup and bounded-exercise authorization. This feature PR remains unmerged.
+
 Status: target roadmap with Phases 1A-1 through Phase 1A-3B offline progress recorded below, 2026-11-03. Later work remains gated.
 Read with the [system design](architecture/SYSTEM_DESIGN.md), [threat model](architecture/THREAT_MODEL.md), [cost and safety plan](architecture/CLOUD_COST_AND_SAFETY.md), and [reuse audit](architecture/REUSE_AUDIT.md).
 Offline parsing/detection, durable PostgreSQL evidence/jobs/unreviewed draft cases and a restricted local authenticated analyst workspace are implemented. Human review and guarded closure now apply only to synthetic no-action exercises. No live AWS, SIEM or complete authentic Phase1 acceptance is claimed.
