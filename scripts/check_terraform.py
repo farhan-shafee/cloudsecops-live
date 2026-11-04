@@ -9,12 +9,17 @@ different expressions require reviewing this policy as well as the source.
 import json
 import re
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "infra/aws-offline"
 AWS_VERSION = "6.71.0"
 TERRAFORM_VERSION = "1.17.1"
+LOCK_SHA256 = (
+    "5abf879e0c43d94543a4fe949a47d4ff"  # pragma: allowlist secret - public SHA256
+    "241d87b9b6b371a52bc6f904ef49fdf6"  # pragma: allowlist secret - public SHA256
+)
 INPUTS = (
     "account_id",
     "archive_bucket_name",
@@ -468,7 +473,7 @@ def check_directory(directory: Path) -> list[str]:
     try:
         if directory.is_symlink() or not directory.is_dir():
             return ["source directory missing or unsupported"]
-        expected = {"main.tf.json", "terraform.tfvars.example", "README.md"}
+        expected = {"main.tf.json", "terraform.tfvars.example", "README.md", ".terraform.lock.hcl"}
         entries = list(directory.iterdir())
         if {path.name for path in entries} != expected:
             return ["missing file or unexpected entry in source directory"]
@@ -486,6 +491,8 @@ def check_directory(directory: Path) -> list[str]:
             texts[path.name] = content
         if texts["terraform.tfvars.example"] != EXAMPLE:
             return ["tracked example must remain placeholder-only"]
+        if sha256(texts[".terraform.lock.hcl"].encode("utf-8")).hexdigest() != LOCK_SHA256:
+            return ["provider lock differs from reviewed two-platform dependency receipt"]
         document = json.loads(
             texts["main.tf.json"], object_pairs_hook=_unique_object, parse_constant=_finite_only
         )

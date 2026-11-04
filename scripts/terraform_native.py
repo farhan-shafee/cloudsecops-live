@@ -479,8 +479,12 @@ def _download(url: str, destination: Path, limit: int) -> None:
         with opener.open(url, timeout=45) as response, destination.open("xb") as output:
             _require(response.status == 200 and response.geturl() == url, "download_failed")
             total = 0
-            while chunk := response.read(MIB):
+            while True:
                 _require(time.monotonic() <= deadline, "download_failed")
+                chunk = response.read1(MIB)
+                _require(time.monotonic() <= deadline, "download_failed")
+                if not chunk:
+                    break
                 total += len(chunk)
                 _require(total <= limit, "download_too_large")
                 output.write(chunk)

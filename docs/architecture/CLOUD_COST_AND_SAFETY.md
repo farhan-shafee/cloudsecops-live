@@ -20,7 +20,7 @@ Do not enable CloudTrail data/network events, Insights, Lake, Config, Security H
 
 ## Concrete planning model
 
-Use 30 days with no Free Tier credits/promotions. Retained GB includes noncurrent versions, digests, state and receipts. Request counts include both collectors, verifier, retries, validation and reconciliation; every listing page counts.
+Use a30-day pricing window with no Free Tier credits/promotions, not a30-day retention guarantee. The current Terraform source preserves evidence indefinitely; retained versions can continue growing beyond that window. Retained GB includes noncurrent versions, digests, state and receipts. Request counts include both collectors, verifier, retries, validation and reconciliation; every listing page counts.
 
 | Input | Model rate | Evidence/uncertainty |
 | --- | --- | --- |
@@ -88,7 +88,7 @@ Stop new exercises/collection on unexpected paid services, identity mismatch, ex
 
 ## Retention and teardown
 
-Proposed private retention: raw logs/digests/case receipts 30 days; indexed SIEM data 14 days; quarantine 7 days; database backups 30 days. Record and price open-case holds. Configure current/noncurrent expiration and incomplete multipart cleanup; ordinary object expiry alone leaves versioned costs. Digests must not expire before their logs. No Glacier minimum-duration classes or Object Lock initially.
+Historical Phase0 retention proposal, **not the active Terraform policy**: raw logs/digests/case receipts30days, indexed SIEM14days, quarantine7days and backups30days. Current source instead has no automatic evidence expiry and no fixed storage-cost ceiling. Adopting finite retention or multipart cleanup requires a separate preservation/hold/cost decision and reviewed source change; this document authorizes no deletion or configuration. Any eventual policy must account for noncurrent versions and ensure digests outlive their logs. Native schema validation proves none of these operational/cost assumptions.
 
 Teardown is reviewed work beyond `terraform destroy`:
 

@@ -1,8 +1,9 @@
 # Credential-free native Terraform gate
 
-Implementation/operation contract. Native acceptance is incomplete while the proposed
-provider lock is being generated and reviewed; only exact-head CI receipts establish
-executed results. Do not infer a passing gate from the command descriptions below.
+Implementation/operation contract. The official two-platform provider lock was generated
+in isolated CI, cryptographically checked and independently reviewed before being committed.
+Only exact-head CI receipts establish full native execution results. Do not infer a passing
+gate from the command descriptions below.
 
 Phase1B-AWS-0R remediates tooling compatibility on the existing PR#6 branch. It
 does not authorize AWS access, a plan, deployment or source-authentication promotion.

@@ -1,16 +1,18 @@
 # Offline AWS infrastructure source
 
-Status: Phase1B-AWS-0 source preparation, 2026-11-03. This directory has not
-created or contacted AWS resources. Terraform is unavailable on this machine;
-`terraform fmt`, initialization and provider-schema validation have **not run**.
-No provider packages or checksums were downloaded, and there is no provider
-dependency lock file. This source is not approved for deployment.
+Status: Phase1B-AWS-0R native compatibility gate. This directory has not
+created or contacted AWS resources. The separate required native CI job uses
+verified official Terraform1.17.1 and AWS provider6.71.0 artifacts in disposable
+space, with a reviewed Linux/Windows dependency lock. Exact-head execution
+results belong to PR#6's sanitized receipts, not this source description.
+No Terraform/provider is installed globally on the workstation. This source
+is not approved for deployment.
 
 The reviewed source uses Terraform's native JSON syntax in `main.tf.json`.
 [`check_terraform.py`](../../scripts/check_terraform.py) is a closed structural
 policy allowlist, not Terraform validation, an expression evaluator, effective
 IAM analysis or evidence of successful CloudTrail delivery. Intentional changes
-require reviewing both the source and its static policy. Only the three tracked
+require reviewing both the source and its static policy. Only the four tracked
 files belong in this directory; put private input, state, plans and receipts in
 an approved private location outside the source tree.
 
@@ -24,7 +26,9 @@ an approved private location outside the source tree.
   ownership, versioning and explicit SSE-S3 encryption. CloudTrail service writes
   require the exact trail ARN, source account and bucket-owner-full-control ACL,
   restricted to this account's regional log and digest prefixes. Other writers
-  and non-TLS access are denied by the bucket policy.
+  and non-service non-TLS access are denied by the bucket policy. The TLS deny
+  uses AWS's service-principal exemption for redacted service network context;
+  actual CloudTrail delivery still requires a separately authorized live test.
 - Three roles with a one-hour maximum session duration and distinct exact
   pre-existing trusted role principals: collector, independent verifier and
   test actor. There are no IAM users, keys, wildcard trusted principals or
@@ -115,15 +119,16 @@ variables. Mutation tests exercise privilege widening and destructive settings.
 
 The provider is pinned exactly to `hashicorp/aws = 6.71.0`, checked against the
 [official release](https://github.com/hashicorp/terraform-provider-aws/releases/tag/v6.71.0)
-on 2026-11-03. Terraform must be at least 1.9 for cross-variable input validation
-and below 2.0. An exact provider version is not a checksum-verified installation.
-Future work must obtain reviewed official tooling, inspect signed release
-checksums and generate/review a cross-platform dependency lock file before any
-provider installation. Use a clean temporary validation copy for any later
-credential-free `terraform init -backend=false` and `terraform validate`;
-initialization downloads packages and needs its own authorized network scope.
-Keep credentials and credential-loading hooks absent during that check. Do not
-treat the static source check as satisfying this compatibility gate.
+on 2026-11-03. Terraform is now pinned exactly to1.17.1. The independent
+[native gate](../../docs/TERRAFORM_NATIVE_VALIDATION.md) verifies publisher
+signatures and selected active-key validity, all four reviewed Linux/Windows
+CLI/provider archive hashes, the actual installed Linux executable and the
+official dependency-generated lock. Its clean credential-free copy runs native
+init with backend disabled, validate JSON, provider-schema inspection and
+repeated read-only initialization/validation. Missing or changed locks fail;
+no implicit version update is accepted. Formatting is a no-op for .tf.json,
+which native validate must parse instead. Structural checks remain mandatory
+and do not substitute for native acceptance.
 
 Any future plan/apply is a separate authorization gate. First privately confirm
 dedicated account ownership, approved identities, region, baseline/organization
@@ -144,10 +149,10 @@ to this offline source task. Database migrations 001–003 are unaffected.
 
 No additional Python dependency is introduced. Original project code remains MIT;
 the declared AWS provider is separately [MPL2.0 licensed](https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v6.71.0/LICENSE).
-The absent Terraform CLI has its own [BSL1.1 terms](https://github.com/hashicorp/terraform/blob/main/LICENSE),
+The isolated Terraform CLI has its own [BSL1.1 terms](https://github.com/hashicorp/terraform/blob/v1.17.1/LICENSE),
 which are not replaced by this repository's MIT license. No provider/tool binary or
-upstream implementation was copied into this project. Review the exact selected
-tool release and package checksums before a separately approved installation.
+upstream implementation is committed. Downloaded artifacts stay in disposable CI;
+public signature diagnostics use a separate private keyring, never the user's trust store.
 
 - [Terraform JSON configuration](https://developer.hashicorp.com/terraform/language/syntax/json)
   and [validation behavior](https://developer.hashicorp.com/terraform/cli/commands/validate).

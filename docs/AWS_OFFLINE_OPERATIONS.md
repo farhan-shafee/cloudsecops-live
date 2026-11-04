@@ -64,11 +64,14 @@ CI/review outcomes. Local acceptance is recorded in that validation document; ex
 publication results belong to the PR and delivery report. No independent human reproduction
 or effective IAM result is claimed.
 
-Terraform is unavailable locally. `terraform fmt`, initialization, provider-schema
-validation, provider installation/lock verification, plan, apply and destroy are
-**NOT_RUN**. The standard-library source checker is a closed structural allowlist with
-mutation tests; its pass is not Terraform/provider validation or an evaluation of effective
-IAM. No real `tfvars`, state, saved plan or credentials belong in the tracked source folder.
+The workstation has no global Terraform/provider installation. Phase1B-AWS-0R's separate
+[native CI gate](TERRAFORM_NATIVE_VALIDATION.md) verifies official artifacts and the
+two-platform dependency lock, then requires backend-disabled initialization, native
+validation, actual provider schema and read-only lock reuse. Consult exact-head receipts
+for executed outcomes. The standard-library structural allowlist and its mutation tests
+remain independent checks; neither proves effective IAM. Plan/apply/destroy/import/refresh
+and every AWS request remain prohibited. No real tfvars, state, saved plan or credentials
+belong in the tracked source folder.
 
 ## Controlled failure practice
 

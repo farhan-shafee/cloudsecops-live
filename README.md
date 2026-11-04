@@ -9,7 +9,7 @@ After the hash-locked Python setup below, run the deterministic credential-free 
 .venv\Scripts\python.exe scripts/check_terraform.py
 ```
 
-Expected: three AWS-shaped fixture events, `authenticated=false`, pending source authentication, controlled digest consistency and `AWS_AUTHENTICATION_UNAVAILABLE`. The Terraform command checks reviewed source structure/IAM assumptions only; executable/provider validation and effective permissions remain unproven. See [AWS source design](docs/architecture/AWS_OFFLINE_SOURCE.md), [offline operations](docs/AWS_OFFLINE_OPERATIONS.md), [validation record](docs/PHASE1B_AWS_OFFLINE_VALIDATION.md), [Terraform preparation](infra/aws-offline/README.md) and [no-AI lab](docs/labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md).
+Expected: three AWS-shaped fixture events, `authenticated=false`, pending source authentication, controlled digest consistency and `AWS_AUTHENTICATION_UNAVAILABLE`. The Terraform command checks reviewed source structure/IAM assumptions only. Phase1B-AWS-0R adds a separate mandatory [native Terraform/provider gate](docs/TERRAFORM_NATIVE_VALIDATION.md) in credential-free disposable CI; its exact-head results must pass independently. Native schema compatibility does not prove effective IAM, service delivery or AWS evidence authenticity. See [AWS source design](docs/architecture/AWS_OFFLINE_SOURCE.md), [offline operations](docs/AWS_OFFLINE_OPERATIONS.md), [validation record](docs/PHASE1B_AWS_OFFLINE_VALIDATION.md), [Terraform preparation](infra/aws-offline/README.md) and [no-AI lab](docs/labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md).
 
 An AWS-first security engineering portfolio and training environment. The intended full workflow is:
 

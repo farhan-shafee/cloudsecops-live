@@ -223,4 +223,31 @@ def test_checker_does_not_invoke_processes_or_network(candidate: Path) -> None:
         if isinstance(node, (ast.Import, ast.ImportFrom))
         for alias in node.names
     }
-    assert imports <= {"json", "pathlib", "re", "sys"}
+    assert imports <= {"hashlib", "json", "pathlib", "re", "sys"}
+
+
+@pytest.mark.parametrize(
+    "damage", ["missing", "version", "source", "linux", "windows", "h1", "comment"]
+)
+def test_reviewed_provider_lock_cannot_be_omitted_or_changed(candidate: Path, damage: str) -> None:
+    lock = candidate / ".terraform.lock.hcl"
+    text = lock.read_text(encoding="utf-8")
+    if damage == "missing":
+        lock.unlink()
+    else:
+        if damage == "version":
+            text = text.replace('version     = "6.71.0"', 'version     = "6.72.0"')
+        elif damage == "source":
+            text = text.replace("hashicorp/aws", "unreviewed/aws")
+        elif damage == "linux":
+            text = "\n".join(line for line in text.splitlines() if "zh:cb57bb" not in line)
+        elif damage == "windows":
+            text = "\n".join(line for line in text.splitlines() if "zh:556167" not in line)
+        elif damage == "h1":
+            text = "\n".join(line for line in text.splitlines() if "h1:" not in line)
+        else:
+            text += "# unreviewed edit\n"
+        assert text != lock.read_text(encoding="utf-8")
+        lock.write_text(text, encoding="utf-8")
+    result = run_check(candidate)
+    assert result.returncode == 1

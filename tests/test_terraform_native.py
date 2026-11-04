@@ -1014,6 +1014,140 @@ def test_unapproved_download_endpoint_fails_before_opening_network(
         native._download(url, tmp_path / "download", 1024)
 
 
+def emulate_download_transport(
+    native,
+    monkeypatch,
+    frames: list[tuple[bytes, float]],
+    *,
+    status: int = 200,
+    final_url: str | None = None,
+    failure: Exception | None = None,
+) -> dict:
+    """Use no sockets or CA files while exercising the real download loop."""
+    url = "https://www.hashicorp.com/.well-known/pgp-key.txt"
+    observed = {"clock": 0.0, "trust_files": [], "reads": []}
+    remaining = iter(frames)
+
+    class Response:
+        def __init__(self):
+            self.status = status
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def geturl(self):
+            return final_url or url
+
+        def read1(self, size):
+            observed["reads"].append(size)
+            if failure is not None:
+                raise failure
+            payload, elapsed = next(remaining, (b"", 0.0))
+            observed["clock"] += elapsed
+            return payload
+
+        def read(self, size):
+            pytest.fail("download uses buffered reads that can hide slow trickle past its deadline")
+
+    def make_context(protocol):
+        observed["protocol"] = protocol
+        context = SimpleNamespace(load_verify_locations=observed["trust_files"].append)
+
+        def trust_file(*, cafile):
+            observed["trust_files"].append(cafile)
+
+        context.load_verify_locations = trust_file
+        observed["context"] = context
+        return context
+
+    def build_opener(*handlers):
+        observed["handlers"] = handlers
+
+        def open_response(requested_url, timeout):
+            observed["url"] = requested_url
+            observed["timeout"] = timeout
+            return Response()
+
+        return SimpleNamespace(open=open_response)
+
+    monkeypatch.setattr(native.ssl, "SSLContext", make_context)
+    monkeypatch.setattr(native.urllib.request, "build_opener", build_opener)
+    monkeypatch.setattr(native.time, "monotonic", lambda: observed["clock"])
+    return observed
+
+
+def test_download_pins_tls_trust_disables_proxies_and_writes_bounded_complete_response(
+    native, monkeypatch, tmp_path: Path
+) -> None:
+    observed = emulate_download_transport(native, monkeypatch, [(b"pub", 1.0), (b"lic", 1.0)])
+    destination = tmp_path / "vendor-key"
+    native._download("https://www.hashicorp.com/.well-known/pgp-key.txt", destination, 6)
+    assert destination.read_bytes() == b"public"
+    assert observed["protocol"] == native.ssl.PROTOCOL_TLS_CLIENT
+    assert observed["context"].minimum_version == native.ssl.TLSVersion.TLSv1_2
+    assert observed["trust_files"] == ["/etc/ssl/certs/ca-certificates.crt"]
+    assert observed["timeout"] == 45
+    proxies = [
+        handler
+        for handler in observed["handlers"]
+        if isinstance(handler, native.urllib.request.ProxyHandler)
+    ]
+    assert len(proxies) == 1 and proxies[0].proxies == {}
+    assert any(isinstance(handler, native._NoRedirect) for handler in observed["handlers"])
+
+
+@pytest.mark.parametrize(
+    ("frames", "status", "final_url", "limit", "code"),
+    [
+        ([], 200, None, 4, "download_failed"),
+        ([(b"body", 0.0)], 302, None, 4, "download_failed"),
+        ([(b"body", 0.0)], 404, None, 4, "download_failed"),
+        ([(b"body", 0.0)], 200, "https://attacker.invalid/redirect", 4, "download_failed"),
+        ([(b"abcde", 0.0)], 200, None, 4, "download_too_large"),
+        ([(b"body", 301.0)], 200, None, 4, "download_failed"),
+    ],
+)
+def test_download_status_redirect_empty_oversize_and_elapsed_failures_are_closed(
+    native, monkeypatch, tmp_path: Path, frames, status, final_url, limit, code
+) -> None:
+    emulate_download_transport(native, monkeypatch, frames, status=status, final_url=final_url)
+    with pytest.raises(native.NativeError) as failure:
+        native._download(
+            "https://www.hashicorp.com/.well-known/pgp-key.txt", tmp_path / "key", limit
+        )
+    assert str(failure.value) == code
+
+
+def test_download_completion_after_overall_deadline_cannot_be_accepted(
+    native, monkeypatch, tmp_path: Path
+) -> None:
+    emulate_download_transport(native, monkeypatch, [(b"body", 299.0), (b"", 2.0)])
+    with pytest.raises(native.NativeError) as failure:
+        native._download("https://www.hashicorp.com/.well-known/pgp-key.txt", tmp_path / "key", 4)
+    assert str(failure.value) == "download_failed"
+
+
+def test_download_transport_error_is_sanitized_and_cannot_leave_success(
+    native, monkeypatch, tmp_path: Path
+) -> None:
+    marker = "SYNTHETIC-TRANSPORT-PRIVATE-MARKER"
+    emulate_download_transport(native, monkeypatch, [], failure=OSError(marker))
+    with pytest.raises(native.NativeError) as failure:
+        native._download("https://www.hashicorp.com/.well-known/pgp-key.txt", tmp_path / "key", 4)
+    assert str(failure.value) == "download_failed"
+    assert marker not in str(failure.value)
+
+
+def test_redirect_handler_rejects_redirect_instead_of_following(native) -> None:
+    with pytest.raises(native.NativeError):
+        native._NoRedirect().redirect_request(
+            None, None, 302, "Found", {}, "https://attacker.invalid/redirect"
+        )
+
+
 def test_failed_receipt_contains_fixed_codes_without_raw_argument_or_absolute_paths(
     native, tmp_path: Path, capsys
 ) -> None:
@@ -1081,6 +1215,49 @@ def test_toolchain_provenance_failure_never_extracts_or_executes_downloaded_bina
     )
     if failure_point == "signature":
         assert not any(url.endswith(".zip") for url in downloads)
+
+
+def test_late_provider_archive_hash_failure_prevents_verified_cli_extraction_and_execution(
+    native, monkeypatch, tmp_path: Path
+) -> None:
+    # All three earlier archives match this independently known SHA256("hello").
+    digest = (
+        "2cf24dba5fb0a30e26e83b2ac5b9e29e1"  # pragma: allowlist secret - public SHA256
+        "b161e5c1fa7425e73043362938b9824"  # pragma: allowlist secret - public SHA256
+    )
+    archives = [
+        "terraform_1.17.1_linux_amd64.zip",
+        "terraform_1.17.1_windows_amd64.zip",
+        "terraform-provider-aws_6.71.0_linux_amd64.zip",
+        "terraform-provider-aws_6.71.0_windows_amd64.zip",
+    ]
+    monkeypatch.setattr(native, "ARCHIVE_HASHES", dict.fromkeys(archives, digest))
+    observed = []
+
+    def download(url, destination, limit):
+        if destination.name.endswith("_SHA256SUMS"):
+            prefix = destination.name.removesuffix("_SHA256SUMS") + "_"
+            destination.write_text(
+                "".join(f"{digest}  {name}\n" for name in archives if name.startswith(prefix)),
+                encoding="ascii",
+            )
+        elif destination.name.endswith(".zip"):
+            observed.append(destination.name)
+            destination.write_bytes(b"tampered" if destination.name == archives[-1] else b"hello")
+        else:
+            destination.write_bytes(b"SYNTHETIC-PUBLIC-KEY-OR-SIGNATURE")
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("verified CLI was extracted or executed before all provider ZIP hashes passed")
+
+    monkeypatch.setattr(native, "_download", download)
+    monkeypatch.setattr(native, "_verify_signatures", lambda *args: {})
+    monkeypatch.setattr(native, "_archive_binary", forbidden)
+    monkeypatch.setattr(native, "_terraform", forbidden)
+    with pytest.raises(native.NativeError) as failure:
+        native._toolchain(tmp_path, {})
+    assert str(failure.value) == "archive_hash_mismatch"
+    assert observed == archives
 
 
 def emulate_native_dependency(
