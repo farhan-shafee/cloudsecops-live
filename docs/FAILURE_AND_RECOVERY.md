@@ -26,7 +26,7 @@ not permission to use an already exhausted cluster. See the complete
 [capacity and provenance contract](PHASE1B_OPS1_SAFETY.md).
 
 New targets are created with `ALLOW_CONNECTIONS false`, recorded with exact private
-name/OID/owner/cluster/storage bindings, and denied PUBLIC database privileges before
+name/OID/owner/cluster/storage bindings, and denied PUBLIC CONNECT before
 maintenance connections are enabled. A `ready` journal transition is still pending
 migration completion. Only `provisioned` or an explicit `rejected` terminal state closes
 an attempt; a `migrate=False` target records `unmigrated_target_ready` rather than

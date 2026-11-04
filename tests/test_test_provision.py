@@ -90,8 +90,11 @@ def test_connection_quarantine_is_part_of_create_and_precedes_acl(tmp_path):
         owner.create(migrate=False, test="test-create", purpose="restore_upgrade")
     commands = "\n".join(conn.commands)
     assert "ALLOW_CONNECTIONS false" in commands
-    assert commands.index("ALLOW_CONNECTIONS false") < commands.index("REVOKE ALL")
-    assert commands.index("REVOKE ALL") < commands.index("ALLOW_CONNECTIONS true")
+    assert "REVOKE CONNECT ON DATABASE" in commands
+    assert "REVOKE ALL ON DATABASE" not in commands
+    assert "'TEMPORARY'" not in commands
+    assert commands.index("ALLOW_CONNECTIONS false") < commands.index("REVOKE CONNECT")
+    assert commands.index("REVOKE CONNECT") < commands.index("ALLOW_CONNECTIONS true")
     records = read_records(tmp_path)
     assert [r["event"] for r in records] == [
         "run_started",

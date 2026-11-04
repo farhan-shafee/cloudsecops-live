@@ -223,20 +223,20 @@ class Provisioner:
             self.journal.append({**base, "event": "created", "outcome": "connections_disabled"})
             self.fault("created")
             self.conn.execute(
-                sql.SQL("REVOKE ALL ON DATABASE {} FROM PUBLIC").format(sql.Identifier(name))
+                sql.SQL("REVOKE CONNECT ON DATABASE {} FROM PUBLIC").format(sql.Identifier(name))
             )
             self.fault("acl")
             row = self.conn.execute(
                 "SELECT datallowconn, EXISTS(SELECT FROM aclexplode("
                 "coalesce(datacl,acldefault('d',datdba))) WHERE grantee=0 "
-                "AND privilege_type IN ('CONNECT','CREATE','TEMPORARY')) AS public_access "
+                "AND privilege_type='CONNECT') AS public_access "
                 "FROM pg_catalog.pg_database WHERE datname=%s AND oid=%s "
                 "AND pg_get_userbyid(datdba)=%s",
                 (name, base["oid"], base["owner"]),
             ).fetchone()
             if not row or row["datallowconn"] or row["public_access"]:
                 raise CapacityError("CREATION_QUARANTINE_FAILED")
-            self.journal.append({**base, "event": "quarantined", "outcome": "owner_only_acl"})
+            self.journal.append({**base, "event": "quarantined", "outcome": "owner_only_connect"})
             self.fault("quarantined")
             self.conn.execute(
                 sql.SQL("ALTER DATABASE {} ALLOW_CONNECTIONS true").format(sql.Identifier(name))

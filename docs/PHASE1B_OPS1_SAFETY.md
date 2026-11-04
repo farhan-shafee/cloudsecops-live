@@ -169,6 +169,14 @@ requires a successful complete disposable run and measured final/peak counts bef
 The 200-database, 192-per-run and every memory/disk/CPU/PID threshold are unchanged.
 The retained workstation's 9,444 roles remain disallowed; no local operation follows.
 
+A complete 178-creation run then reached 1,219 roles, establishing role-budget headroom,
+but passed only 173/174 cases: revoking all PUBLIC database privileges had removed TEMP
+used by the unchanged temporary-table shadowing security test. Quarantine now revokes
+only PUBLIC CONNECT while ALLOW_CONNECTIONS is false, preserving the original TEMP
+policy and the existing adversarial test. Runtime connection grants still require
+trusted security setup. Full corrected-source acceptance remains required; the earlier
+173/174 run is not counted as passing.
+
 Offline units exercise capacity boundaries, missing identity/observations, journal
 serialization/durability, malformed/truncated chains, error redaction and public-receipt
 allowlisting. Required real PostgreSQL tests run only on the separately identified
