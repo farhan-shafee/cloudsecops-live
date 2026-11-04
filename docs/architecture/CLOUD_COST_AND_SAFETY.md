@@ -1,5 +1,13 @@
 # Cloud cost and safety
 
+Phase1B-AWS-1 adds offline-tested SDK/receipt preparation only. The
+[live-readiness packet](../AWS_LIVE_READINESS.md) requires a private current regional quote,
+owner-approved exposure, verified notification delivery and explicit reconciliation of
+indefinite version preservation versus funded retention/cleanup before provisioning.
+The existing numerical model below remains illustrative; no actual account spending or
+budget configuration is approved. Read-only inspection, provisioning, test activity and
+cleanup are four separate permissions. No SDK test or PR approval supplies any of them.
+
 ## Phase1B-AWS-0 offline override
 
 This milestone creates source/contracts only: zero AWS calls, provisioning, budget configuration or spend. Fixed `us-east-1` [Terraform source](../../infra/aws-offline/README.md) has no compute, NAT, RDS, data events, Insights, paid scanner or hosted SIEM. Private inputs have no real defaults and must never replace tracked placeholders. Collector/verifier are read-only; the test actor has only regional DescribeInstances. Provisioning/cleanup remain separate externally reviewed authorities.

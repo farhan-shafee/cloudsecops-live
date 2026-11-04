@@ -1,5 +1,24 @@
 # Threat model
 
+## Phase1B-AWS-1 transport and receipt boundary
+
+New risks include ambient credential resolution, stale temporary identity, regional
+redirects, bucket-owner confusion, incomplete version pagination, partial streams,
+SDK retry multiplication, misleading CLI success and receipt substitution. The injected
+adapter checks shared explicit temporary credential binding, exact role/session and UTC
+lease, fixed regional TLS endpoints, no proxies, bounded timeouts/one SDK attempt,
+ExpectedBucketOwner, exact versions and bounded reads. Every service operation rechecks
+STS identity; local checks cannot prove organizational permission or cryptographic source
+authenticity. Pinned private botocore fields are compatibility boundaries requiring review.
+
+The fixed CLI2.37.11 parser rejects unsupported/malformed output and reconciles exact
+locations, digest membership/content hashes and bracketing version observations. These
+are controlled local claims; fabrication by the local operator remains possible. Every
+result stays unauthenticated and cannot create findings or synthetic closure authority.
+No live command or trusted-source constructor exists. The old pure offline package
+remains SDK-free; migrations and restricted SQL authority are unchanged.
+See [receipt limits](AWS_CLI_RECEIPT_CONTRACT.md) and [owner gates](../AWS_LIVE_READINESS.md).
+
 ## Offline AWS preparation boundary
 
 Phase1B-AWS-0 handles AWS-shaped hostile bytes and fake service observations without a network/credential client. Synthetic and AWS-shaped schemas remain distinct. Complete records, unknown fields and both hash domains are retained; a normalized projection, claimed role, JSON trust field, CLI exit0 or matching checksum cannot establish AWS authenticity.
@@ -8,7 +27,7 @@ Scope binds account, region, role unique ID/ARN, trail and exact bucket/log/dige
 
 Controlled signature/chain/membership outcomes are test inputs. Even consistent outcomes stay pending and `require_authenticated` always rejects. Future supported CLI validation must cover original locations, standard/backfill chains and exact membership; no VersionId switch exists. Current-key validation cannot silently authenticate an unrelated downloaded version. Uncompressed hashes bind signed membership; compressed hashes preserve retrieval bytes separately. Missing/delayed/contradictory data and version races remain explicit gaps. No AWS-shaped result enters findings, recommendation authority or closure.
 
-Terraform has a closed resource/IAM source allowlist and separate runtime/provisioning/cleanup identities. Structural checks cannot prove provider compatibility, effective policies, organization boundaries, service delivery or trustworthy credentials. Terraform is absent locally: executable/provider validation remains blocked. No provider initialization, plan/apply, AWS call or budget exists here. Wazuh RAM failure and the unproven historical PostgreSQL crash remain unresolved; independent offline preparation waives neither SIEM nor authenticity acceptance. See [AWS architecture](AWS_OFFLINE_SOURCE.md).
+Terraform has a closed resource/IAM source allowlist and separate runtime/provisioning/cleanup identities. Structural checks cannot prove provider compatibility, effective policies, organization boundaries, service delivery or trustworthy credentials. The subsequent [native Terraform gate](../TERRAFORM_NATIVE_VALIDATION.md) independently validates installed-provider schema compatibility in credential-free disposable CI. That does not establish effective IAM or AWS service behavior. No plan/apply, AWS call or budget exists here. Wazuh RAM failure and the unproven historical PostgreSQL crash remain unresolved; independent offline preparation waives neither SIEM nor authenticity acceptance. See [AWS architecture](AWS_OFFLINE_SOURCE.md).
 
 Status: target threat model, 2026-11-03. Phase 1A-1 covers [offline parsing/detection](../OFFLINE_FOUNDATION.md); Phase 1A-2 adds [local persistence and recovery controls](PERSISTENCE_CONTRACTS.md). Phase 1A-3A implements [local authentication, per-case authorization and append-only notes](ANALYST_WORKSPACE.md). Phase 1A-3B adds reviewed synthetic no-action recommendations, distinct decisions, restricted consistency verification and guarded exercise closure. Live-source trust and cloud response remain future requirements. See the [system design](SYSTEM_DESIGN.md) and [delivery gates](../DELIVERY_ROADMAP.md).
 

@@ -18,6 +18,14 @@ defaults:
   run:
     shell: pwsh
 
+# SDK tests use explicit fictional credentials, stub clients and socket denial.
+# No profiles, AWS credentials, OIDC or live collection command are supplied.
+env:
+  AWS_EC2_METADATA_DISABLED: "true"
+  AWS_CONFIG_FILE: ${{ github.workspace }}/.tools/nonexistent-aws-config
+  AWS_SHARED_CREDENTIALS_FILE: ${{ github.workspace }}/.tools/nonexistent-aws-credentials
+  AWS_MAX_ATTEMPTS: "1"
+
 jobs:
   validate:
     timeout-minutes: 15
@@ -55,7 +63,7 @@ jobs:
         # gates explicitly; new durable coverage is measured in required DB jobs.
         run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Foundation line and actual ingestion/detection branch gates
-        run: python scripts/check_coverage.py --require-aws
+        run: python scripts/check_coverage.py --require-aws --require-aws1
       - name: Secret and private identifier scan (no remote credential verification)
         run: python scripts/check_secrets.py
       - name: Build with locked backend
@@ -136,7 +144,7 @@ jobs:
           CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: python scripts/run_integration.py --receipt .tools/ci-receipts/postgres-py${{ matrix.python }}.json -- --cov=cloudsecops_live --cov-append --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Preserve foundation gates and require actual security branches
-        run: python scripts/check_coverage.py --require-durable --require-security --require-aws
+        run: python scripts/check_coverage.py --require-durable --require-security --require-aws --require-aws1
       - name: Retain sanitized database test and coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

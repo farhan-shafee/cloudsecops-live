@@ -1,5 +1,34 @@
 # Local failure and recovery runbook
 
+Phase1B-AWS-1 adds no database schema or AWS intake path. Rejected SDK/CLI observations
+remain outside accepted synthetic evidence; no receipt can grant authentication or
+closure. Keep originals/version observations privately when diagnosing a future approved
+source mismatch. Do not retry permanent identity/owner/TLS/schema failures as empty
+success. The existing sequential PostgreSQL, backup/restore, NUL quarantine and legacy
+evidence behavior remains required. A new native backend crash stops acceptance and
+preserves diagnostics; the historical SIGSEGV cause remains unproven. No Wazuh resource
+gate is waived. See [AWS operations](AWS_OFFLINE_OPERATIONS.md).
+
+### Phase1B-AWS-1 local allocation stop
+
+At2026-11-04T04:16Z, the first new guarded-boundary integration test failed while taking
+the existing41-table snapshot: PostgreSQL could not allocate a32MiB shared-memory
+segment. The suite stopped immediately. A read-only check found61/64MiB `/dev/shm`
+used,2,438retained test databases and approximately416MiB/512MiB container memory.
+No other client session was active at the diagnostic sample. Accumulated retained
+database/statistics state is a plausible contributor, not a proven root cause.
+
+The container remained healthy with0restarts, `OOMKilled=false` and0new native-crash
+signatures in the bounded log window; the allocation error itself is a new observed
+local capacity failure. Private failure receipt and raw diagnostic logs are retained.
+Do not call this a passed local acceptance or a fix for the historical SIGSEGV. No
+database, shared-memory file or volume was deleted; no process/container was restarted
+or resource limit increased. Further local database suites are blocked pending a
+separately authorized capacity/retention decision. Complete PostgreSQL acceptance must
+run in the existing isolated sequential CI service; report its exact-head result
+separately. A future operator may propose a separately named isolated test service or
+owner-reviewed retained-data policy, never automatic cleanup of these databases.
+
 Scope: project-only, offline PostgreSQL and synthetic fixtures. Preserve originals and diagnostics. Never use a database failure as evidence that no security activity occurred.
 
 Phase 1A-3A adds [workspace operations](WORKSPACE_OPERATIONS.md) and [restricted SQL identities](architecture/ANALYST_WORKSPACE.md). The migration/maintenance identity stays outside runtime configuration. Run explicit `workspace roles-setup` before a fresh latest migration. All 22 legacy tables remain; seven workspace tables are added by forward migration 002. Never edit migration 001 or reset a retained database to repair compatibility failures.

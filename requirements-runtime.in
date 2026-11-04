@@ -11,3 +11,7 @@ uvicorn==0.54.0
 argon2-cffi==25.1.0
 Jinja2==3.1.6
 cryptography==50.0.2
+# AWS SDK metadata reviewed 2026-11-03: stable, Apache-2.0; no CRT extra.
+# Only the new injected-client adapter imports botocore. No SDK session factory.
+boto3==1.43.123
+botocore==1.43.123

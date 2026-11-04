@@ -1,5 +1,21 @@
 # Delivery roadmap
 
+## Phase1B-AWS-1: guarded transport, still offline
+
+PR#6 was normally merged at `da8fcbcde05a4e7a7e66e9c8efb26e892211d465`, preserving
+reviewed tree `7520b34f32bf50806040a04897c681cd2f05199c`. The next dedicated branch adds
+an injected-only guarded SDK transport and offline AWS CLI receipt consistency parser.
+No live command, authentication constructor, migration or synthetic-workflow bridge is
+introduced. [Owner readiness](AWS_LIVE_READINESS.md) and the
+[no-AI lab](labs/PHASE1B_AWS1_INTERVIEW_LAB.md) distinguish implementation from unapproved
+live inspection, provisioning, test activity and cleanup. Nine existing CI jobs and all
+earlier acceptance gates remain mandatory; new security modules have individual85%
+branch gates. Wazuh RAM and the unproven PostgreSQL SIGSEGV remain unresolved.
+
+Recommended next boundary: separately authorized, bounded read-only AWS readiness
+inspection with approved session/client assembly and exact identity/source/cost limits.
+No live collection, trusted findings or cloud exercise is ready merely from offline tests.
+
 ## Phase1B-AWS-0: independent offline preparation before SIEM
 
 The owner explicitly reordered this independent milestone after PR#5 was normally merged as `7b8435f8e93c375f83501baace45468ee5e6e9c1`, preserving reviewed tree `c3c0eb17964d1002e71cfedae144140da1f49c7d`. Separate untrusted AWS-shaped parsing/collection contracts, controlled digest outcomes, fixed-region Terraform source/static checks and credential-free tests are implemented. No AWS SDK/client, credentials, live API, infrastructure, database migration or authentic finding/closure is introduced. [Architecture](architecture/AWS_OFFLINE_SOURCE.md), [operations](AWS_OFFLINE_OPERATIONS.md) and [lab](labs/PHASE1B_AWS_FOUNDATION_INTERVIEW_LAB.md) define the boundary.
