@@ -158,6 +158,60 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  harness-safety:
+    name: PostgreSQL harness safety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Dedicated disposable service: deliberate uncertain creations never enter
+    # the ordinary recovery job's canonical provenance ledger.
+    services:
+      postgres:
+        image: postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+        env:
+          POSTGRES_USER: cloudsecops_ci
+          POSTGRES_DB: cloudsecops_lab
+          POSTGRES_PASSWORD: csl-disposable-${{ github.run_id }} # pragma: allowlist secret - ephemeral CI only
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+        ports:
+          - "127.0.0.1:5432:5432"
+        options: >-
+          --memory=512m --cpus=1 --pids-limit=128
+          --health-cmd="pg_isready -h 127.0.0.1 -U cloudsecops_ci -d cloudsecops_lab"
+          --health-interval=2s --health-timeout=3s --health-retries=30
+    env:
+      CSL_TEST_DSN: postgresql://cloudsecops_ci:csl-disposable-${{ github.run_id }}@127.0.0.1:5432/cloudsecops_lab?connect_timeout=5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+      - name: Install hash-locked tools and package
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-dev.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install --no-deps --no-build-isolation -e .
+      - name: Offline safety units and branch evidence
+        run: python -m pytest tests/test_capacity_policy.py tests/test_test_service.py tests/test_probe_filesystems.py tests/test_harness_masking.py tests/test_test_journal.py tests/test_test_provision.py --cov=scripts.test_capacity --cov=scripts.test_service --cov=scripts.test_provision --cov=scripts.test_journal --cov-branch --cov-fail-under=0 --cov-report=
+      - name: Required real capacity, quarantine, interruption and concurrency tests
+        env:
+          CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: python scripts/run_integration.py --suite harness_postgres --receipt .tools/ci-receipts/harness-safety.json -- --cov=scripts.test_capacity --cov=scripts.test_service --cov=scripts.test_provision --cov=scripts.test_journal --cov-append --cov-branch --cov-fail-under=0 --cov-report=json:harness-coverage.json
+      - name: Require safety module branch coverage
+        run: python scripts/check_harness_coverage.py
+      - name: Retain sanitized safety evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: postgres-harness-safety
+          path: |
+            .tools/ci-receipts/harness-safety.json
+            harness-coverage.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
   native-terraform:
     name: Native Terraform and provider security
     runs-on: ubuntu-24.04

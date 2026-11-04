@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 from hashlib import sha256
 from typing import Any
@@ -17,6 +16,8 @@ from cloudsecops_live.outbox import deliver_once
 from cloudsecops_live.storage import verify_store
 from cloudsecops_live.worker import work_once
 from scripts.local_postgres import Docker, require_local_docker
+from scripts.test_capacity import CapacityError
+from scripts.test_service import load, require_hosted
 from tests.integration.conftest import ROOT
 from tests.integration.support import add, current
 
@@ -38,53 +39,30 @@ def pg_environment(db) -> dict[str, str]:
 def pg_command(db, program: str, arguments: list[str], data: bytes | None = None) -> bytes:
     values = db._values
     env = pg_environment(db)
+    require_local_docker(env)
+    require_hosted()
+    service = load(ROOT)
+    if (
+        program not in {"pg_dump", "pg_restore"}
+        or not re.fullmatch(r"csl_test_[a-f0-9]{32}", values["dbname"])
+        or os.environ.get("CSL_POSTGRES_CONTAINER") != service.container_id
+    ):
+        raise CapacityError("TEST_SERVICE_IDENTITY_MISMATCH")
     common = ["--username", values["user"], "--dbname", values["dbname"]]
-    executable = shutil.which(program)
-    container = os.environ.get("CSL_POSTGRES_CONTAINER")
-    if container:
-        require_local_docker(env)
-        if not re.fullmatch(r"[a-f0-9]{12,64}", container):
-            pytest.fail("CI PostgreSQL container must be an explicit Docker container id")
-        command = [
-            *Docker(ROOT).prefix,
-            "exec",
-            "--interactive",
-            "--env",
-            "PGPASSWORD",
-            container,
-            program,
-            "--host",
-            "127.0.0.1",
-            "--port",
-            "5432",
-        ]
-    elif executable:
-        command = [executable, "--host", values["host"], "--port", values.get("port", "5432")]
-    else:
-        require_local_docker(env)
-        docker = shutil.which("docker")
-        if not docker:
-            pytest.fail(
-                "Required backup test needs pg_dump/pg_restore or the project Docker service"
-            )
-        command = [
-            *Docker(ROOT).prefix,
-            "compose",
-            "--project-name",
-            "cloudsecops-live-phase1a2",
-            "--file",
-            str(ROOT / "compose.phase1a2.yml"),
-            "exec",
-            "--no-TTY",
-            "--env",
-            "PGPASSWORD",
-            "postgres",
-            program,
-            "--host",
-            "127.0.0.1",
-            "--port",
-            "5432",
-        ]
+    # Never fall back to a host executable or retained Compose cluster.
+    command = [
+        *Docker(ROOT).prefix,
+        "exec",
+        "--interactive",
+        "--env",
+        "PGPASSWORD",
+        service.container_id,
+        program,
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5432",
+    ]
     result = subprocess.run(
         [*command, *common, *arguments],
         input=data,

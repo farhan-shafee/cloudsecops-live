@@ -1,5 +1,36 @@
 # Delivery roadmap
 
+## Phase1B-OPS-1: fail-closed test harness and provenance
+
+The approved PR#7 head was normally merged as
+`1400427df348b06f47e1415e8734aa82bf074305`, tree
+`9fad3b5d56afbc4dfe610e08d26a6b39854267f0`. The dedicated
+`codex/phase1b-ops1-test-harness-safety` branch adds global database/role/resource gates,
+an explicit disposable hosted-CI service contract, whole-run serialization,
+connection-disabled creation and a private durable creation journal. Local enrollment
+and implicit DSN fallback are rejected before a database connection. There is no local
+override or cleanup mechanism.
+
+Preserve all 2,442 retained databases, 9,444 roles, both PostgreSQL volumes, backups,
+historical evidence and diagnostics. The 61/64 MiB shared-memory observation and 32 MiB
+allocation failure remain a demonstrated local capacity stop; database-count causality
+and the historical native SIGSEGV cause remain unproven. Local full-suite acceptance
+remains **NO-GO**. No local test, restart, cleanup or resource change follows from a
+hosted-CI result.
+
+See the [safety contract](PHASE1B_OPS1_SAFETY.md) for fixed thresholds, interruption
+states and preservation requirements. The existing nine CI jobs remain, with a tenth
+`PostgreSQL harness safety` job on a separately isolated disposable service. PostgreSQL
+jobs retain the reviewed 512 MiB/one CPU/64 MiB shared-memory/128-PID envelope and
+sequential acceptance. Actual new test counts, capacity peaks, coverage and exact-head
+CI/review outcomes remain pending execution; no pass is predeclared.
+
+The [governance assessment](TEST_HARNESS_GOVERNANCE.md) records unenforced main
+protection and proposes an owner-applied no-bypass CI/review policy. This milestone
+changes no protection setting. Publish one unmerged PR, then stop. Future local recovery,
+cleanup, AWS inspection and Wazuh work each require separate authorization and their
+remaining readiness gates.
+
 ## Phase1B-AWS-1: guarded transport, still offline
 
 PR#6 was normally merged at `da8fcbcde05a4e7a7e66e9c8efb26e892211d465`, preserving

@@ -1,5 +1,21 @@
 # CloudSecOps Live
 
+Phase1B-OPS-1 adds a **fail-closed disposable-CI test harness** with cluster-wide capacity
+checks, connection-disabled database creation and a private durable provenance journal.
+It rejects local enrollment and implicit DSN fallback before a database connection.
+The retained workstation cluster remains blocked; no retained database or role is
+modified, and no cleanup, restart or resource increase is supplied. See the
+[safety and capacity contract](docs/PHASE1B_OPS1_SAFETY.md) and
+[GitHub governance assessment](docs/TEST_HARNESS_GOVERNANCE.md). New exact-head CI,
+including the separate `PostgreSQL harness safety` job, and independent review remain
+pending until executed and inspected; a workflow definition is not a passing run.
+
+PR#7 was normally merged at `1400427df348b06f47e1415e8734aa82bf074305`, preserving
+reviewed tree `9fad3b5d56afbc4dfe610e08d26a6b39854267f0`. This milestone uses the separate
+`codex/phase1b-ops1-test-harness-safety` branch and will remain an unmerged review PR.
+The historical PostgreSQL SIGSEGV remains unexplained, and local full PostgreSQL suites
+remain **NO-GO**. Wazuh installation and live AWS activity remain unauthorized.
+
 Phase1B-AWS-1 adds an **offline-tested guarded SDK adapter** and fixed-version CLI receipt preparation, while Wazuh remains blocked by measured workstation memory limits. The adapter accepts explicitly configured injected clients; it creates no SDK sessions, discovers no credentials and exposes no live command. Tests use fake/Stubber clients with socket denial. AWS-shaped records and every prepared receipt remain unauthenticated and cannot create trusted findings or close cases. The synthetic pipeline and migrations001–003 remain intact. See the [owner live-readiness packet](docs/AWS_LIVE_READINESS.md), [implementation plan](docs/PHASE1B_AWS1_PLAN.md), [CLI receipt contract](docs/architecture/AWS_CLI_RECEIPT_CONTRACT.md) and [independent interview lab](docs/labs/PHASE1B_AWS1_INTERVIEW_LAB.md).
 
 After the hash-locked Python setup below, run the deterministic credential-free demonstration:
@@ -66,6 +82,8 @@ The project does not claim production SOC experience, operational incident autho
 
 | Document | Purpose |
 | --- | --- |
+| [Test-harness safety](docs/PHASE1B_OPS1_SAFETY.md) | Disposable-CI capacity, private creation provenance, quarantine and retained-data preservation |
+| [Test-harness governance](docs/TEST_HARNESS_GOVERNANCE.md) | Observed branch-protection gaps and the separately authorized owner protection plan |
 | [Reviewed-workflow operations](docs/REVIEWED_WORKFLOW_OPERATIONS.md) | Distinct review, restricted verifier, real HTTPS success/failure and audited reopen demo |
 | [Reviewed-workflow validation](docs/PHASE1A3B_VALIDATION.md) | Executed acceptance, module coverage, permission denials, recovery and limitations |
 | [Workflow authority/state model](docs/architecture/REVIEWED_WORKFLOW.md) | Separate human state, exact bindings, verifier scope, locks and migration003 |
@@ -88,7 +106,13 @@ The project does not claim production SOC experience, operational incident autho
 
 ## Run the durable demo
 
-After the setup above, follow the [local setup and recovery runbook](docs/FAILURE_AND_RECOVERY.md):
+The following is the historical local setup sequence, retained for a future separately
+authorized recovery. **Do not run it on the currently blocked workstation.** Starting a
+service, provisioning accounts, migrations and durable demo writes require separate
+owner permission and capacity review. This milestone authorizes none of those local
+operations. The test runner supports only its explicitly identified disposable hosted-CI
+service; it cannot enroll this local cluster. Read the
+[current stop conditions and recovery runbook](docs/FAILURE_AND_RECOVERY.md) first.
 
 ```powershell
 .venv\Scripts\python.exe scripts/local_postgres.py start
@@ -109,6 +133,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. The next eligible step is a separately authorized bounded read-only AWS readiness inspection after owner decisions, reviewed client assembly and current cost evidence. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The Phase1B-AWS-1 PR remains unmerged; no live exercise follows automatically.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Review the test-harness correction and its isolated CI evidence first. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The Phase1B-OPS-1 PR must remain unmerged; no cleanup or live exercise follows automatically.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

@@ -5,33 +5,195 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import json
+import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
+import threading
 import xml.etree.ElementTree as ET
+from contextlib import ExitStack
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 
+# Script invocation must resolve project-local safety modules before any service use.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.local_postgres import _restrict_directory  # noqa: E402
+from scripts.test_capacity import CapacityError  # noqa: E402
+from scripts.test_journal import JournalError  # noqa: E402
+from scripts.test_service import (  # noqa: E402
+    admin_from_environment,
+    catalog_counts,
+    enroll,
+    observe,
+    require_hosted,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
+ALLOWED_PYTEST_ARGS = {
+    "--cov=cloudsecops_live",
+    "--cov=scripts.test_capacity",
+    "--cov=scripts.test_service",
+    "--cov=scripts.test_provision",
+    "--cov=scripts.test_journal",
+    "--cov-append",
+    "--cov-branch",
+    "--cov-fail-under=0",
+    "--cov-report=term-missing",
+    "--cov-report=json",
+    "--cov-report=xml",
+    "--cov-report=json:harness-coverage.json",
+}
+PUBLIC_REASONS = {
+    "DISPOSABLE_HOSTED_SERVICE_REQUIRED",
+    "TEST_SERVICE_DSN_MISMATCH",
+    "TEST_SERVICE_LOGGING_UNSAFE",
+    "TEST_SERVICE_IDENTITY_MISMATCH",
+    "TEST_SERVICE_SCOPE_MISSING",
+    "TEST_SERVICE_OBSERVATION_FAILED",
+    "TEST_SERVICE_IDENTITY_MISSING",
+    "TEST_SERVICE_VOLUME_MISMATCH",
+    "TEST_SERVICE_CONTRACT_MISSING",
+    "TEST_SERVICE_CONTRACT_INVALID",
+    "FRESH_TEST_SERVICE_REQUIRED",
+    "INVALID_CAPACITY_OBSERVATION",
+    "CAPACITY_DATABASE_LIMIT",
+    "CAPACITY_ROLE_LIMIT",
+    "CAPACITY_DATA_DISK",
+    "CAPACITY_BACKING_DISK",
+    "CAPACITY_SHARED_MEMORY",
+    "CAPACITY_MEMORY",
+    "CAPACITY_OOM",
+    "CAPACITY_PIDS",
+    "CAPACITY_CPU",
+    "CAPACITY_RUN_LIMIT",
+    "HARNESS_BUSY",
+    "CREATION_OPERATOR_REVIEW_REQUIRED",
+    "CREATION_QUARANTINE_FAILED",
+    "CREATED_DATABASE_IDENTITY_MISMATCH",
+    "INVALID_CREATION_PURPOSE",
+    "PRIVATE_MASK_CHANNEL_UNAVAILABLE",
+    "journal_invalid_record",
+    "journal_unsafe_path",
+    "journal_corrupt",
+    "journal_busy",
+    "journal_identity_mismatch",
+    "journal_operator_review_required",
+    "journal_run_reused",
+    "journal_write_failed",
+    "journal_full",
+    "journal_invalid_transition",
+}
+PUBLIC_REASONS |= {
+    "INVALID_CAPACITY_OBSERVATION_" + stage
+    for stage in (
+        "DATA_FILESYSTEM",
+        "SHARED_FILESYSTEM",
+        "MEMORY_COUNTERS",
+        "MEMORY_EVENTS",
+        "PID_CPU",
+        "BACKING_DISK",
+        "RESULT_FIELDS",
+    )
+}
+
+
+def run_private(command: list[str], diagnostic: Path) -> int:
+    """Bound private output without buffering PostgreSQL exceptions in public logs."""
+    limit = 8 * 1024**2
+    failed = threading.Event()
+    with diagnostic.open("xb") as output, ExitStack() as descriptors:
+        if sys.platform != "win32":
+            diagnostic.chmod(0o600)
+        # Private pytest output stays captured. The only extra inherited channel
+        # goes directly to the Actions runner for strict pre-CREATE name masks.
+        # It is never a relay for arbitrary pytest text or evidence fields.
+        mask_fd = os.dup(sys.stdout.fileno())
+        descriptors.callback(os.close, mask_fd)
+        environment = {**os.environ, "CSL_TEST_MASK_FD": str(mask_fd)}
+        with subprocess.Popen(
+            command,
+            cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=environment,
+            pass_fds=(mask_fd,),
+        ) as process:
+            assert process.stdout is not None
+
+            def copy() -> None:
+                size = 0
+                try:
+                    while block := process.stdout.read(16384):
+                        size += len(block)
+                        if size > limit:
+                            failed.set()
+                            process.kill()  # Only this runner's own disposable pytest child.
+                            break
+                        output.write(block)
+                    output.flush()
+                    os.fsync(output.fileno())
+                except OSError:
+                    failed.set()
+                    process.kill()
+
+            reader = threading.Thread(target=copy, daemon=True)
+            reader.start()
+            try:
+                code = process.wait(timeout=15 * 60)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+                code = 2
+            reader.join(timeout=10)
+            if reader.is_alive() or failed.is_set():
+                return 2
+            return code
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument(
+        "--suite", choices=["integration", "harness_postgres"], default="integration"
+    )
     parser.add_argument("pytest_args", nargs="*")
     args = parser.parse_args()
+    if set(args.pytest_args) - ALLOWED_PYTEST_ARGS or any(
+        os.environ.get(key) for key in ("PYTEST_ADDOPTS", "PYTEST_PLUGINS")
+    ):
+        print(json.dumps({"error": "UNSUPPORTED_TEST_RUNNER_ARGUMENT", "tests_started": False}))
+        return 2
+    try:
+        require_hosted()
+        service = enroll(ROOT)
+    except (CapacityError, JournalError, OSError, ValueError, subprocess.SubprocessError) as exc:
+        reason = str(exc) if isinstance(exc, CapacityError) else "TEST_SERVICE_PREFLIGHT_FAILED"
+        if reason not in PUBLIC_REASONS:
+            reason = "TEST_SERVICE_PREFLIGHT_FAILED"
+        print(
+            json.dumps(
+                {"error": "TEST_SERVICE_PREFLIGHT_FAILED", "reason": reason, "tests_started": False}
+            )
+        )
+        return 2
     private = ROOT / ".tools" / "private"
     private.mkdir(parents=True, exist_ok=True)
+    _restrict_directory(private)
     with tempfile.TemporaryDirectory(prefix="integration-", dir=private) as temporary:
         junit = Path(temporary) / "results.xml"
-        result = subprocess.run(
+        diagnostic = private / (
+            "integration-output-" + datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f") + ".log"
+        )
+        code = run_private(
             [
                 sys.executable,
                 "-m",
                 "pytest",
-                "tests/integration",
+                "tests/" + args.suite,
                 "-o",
                 "norecursedirs=",
                 "-p",
@@ -40,12 +202,12 @@ def main() -> int:
                 f"--junitxml={junit}",
                 *args.pytest_args,
             ],
-            cwd=ROOT,
-            check=False,
+            diagnostic,
         )
         counts = {"tests": 0, "passed": 0, "failures": 0, "errors": 0, "skipped": 0}
+        failures: list[dict[str, str]] = []
         properties: dict[str, str] = {}
-        if junit.exists():
+        if junit.exists() and junit.stat().st_size <= 8 * 1024**2:
             tree = ET.parse(junit).getroot()
             properties = {p.attrib["name"]: p.attrib["value"] for p in tree.iter("property")}
             for case in tree.iter("testcase"):
@@ -59,6 +221,31 @@ def main() -> int:
                         outcome, "passed"
                     )
                 ] += 1
+                if outcome in {"failure", "error", "skipped"}:
+                    # Parameter IDs can contain runtime database names or secrets.
+                    # Publish only the static source function name.
+                    name = case.attrib.get("name", "").split("[", 1)[0]
+                    safe_name = (
+                        name
+                        if re.fullmatch(r"[A-Za-z0-9_.\[\]=-]{1,180}", name)
+                        else "redacted_test"
+                    )
+                    failure = case.find(outcome)
+                    text = "" if failure is None else str(failure.text)
+                    code_match = re.search(
+                        r"\b(?:CAPACITY_|TEST_SERVICE_|CREATION_|INVALID_CAPACITY_)[A-Z_]{1,64}\b"
+                        r"|\bjournal_[a-z_]{1,64}\b",
+                        text,
+                    )
+                    failures.append(
+                        {
+                            "test": safe_name,
+                            "outcome": outcome,
+                            "reason": code_match.group()
+                            if code_match and code_match.group() in PUBLIC_REASONS
+                            else "test_failure",
+                        }
+                    )
         revision = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=ROOT,
@@ -75,6 +262,14 @@ def main() -> int:
                 check=True,
             ).stdout
         )
+        # Capture aggregate end counts for the separate fault suite as well. No
+        # test database, owner, cluster, container or volume identities go public.
+        try:
+            with admin_from_environment().connect() as conn:
+                final_counts = catalog_counts(conn)
+            final_resources = observe(ROOT, service)
+        except Exception:
+            final_counts, final_resources, code = {}, {}, 2
         receipt = {
             "schema": 1,
             "created_at": datetime.now(UTC).isoformat(),
@@ -98,9 +293,14 @@ def main() -> int:
                 if path.suffix in {".py", ".sql"}
             },
             "counts": counts,
-            "pytest_exit_code": result.returncode,
+            "failure_summary": failures,
+            "pytest_exit_code": code,
             "required_tests_skipped": counts["skipped"] != 0,
             "retained_databases_created": int(properties.get("retained_databases_created", "-1")),
+            "capacity": json.loads(properties.get("capacity_summary", "{}")),
+            "suite": args.suite,
+            "final_catalog_counts": final_counts,
+            "final_resources": final_resources,
             "fault_methods": {
                 "controlled_exception": [
                     "ingestion commit",
@@ -129,7 +329,19 @@ def main() -> int:
         args.receipt.write_text(
             json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
-    return result.returncode or int(counts["skipped"] != 0 or counts["tests"] == 0)
+        print(
+            json.dumps(
+                {
+                    "suite": args.suite,
+                    "counts": counts,
+                    "failure_summary": failures,
+                    "exit_code": code,
+                },
+                sort_keys=True,
+            )
+        )
+    minimum = {"integration": 174, "harness_postgres": 19}[args.suite]
+    return code or int(counts["skipped"] != 0 or counts["tests"] < minimum)
 
 
 if __name__ == "__main__":

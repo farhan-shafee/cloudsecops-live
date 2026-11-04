@@ -20,6 +20,7 @@ __pycache__/
 .coverage.*
 coverage.json
 coverage.xml
+harness-coverage.json
 htmlcov/
 dist/
 build/
