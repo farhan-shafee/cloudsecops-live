@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import re
+import stat
 import subprocess
 import uuid
 from collections.abc import Callable
@@ -29,11 +32,38 @@ from scripts.test_service import (
     catalog_counts,
     load,
     observe,
+    require_hosted,
     sql_identity,
 )
 
 VERSION = "ops1/1"
 LOCK_ID = 7242601201
+
+
+def mask_identifier(name: str) -> None:
+    """Register only a generated database name, before it can reach service logs.
+
+    The supervising CLI passes its own Actions stdout pipe explicitly. Private
+    pytest output is never interpreted or relayed as workflow commands.
+    """
+    require_hosted()
+    descriptor = os.environ.get("CSL_TEST_MASK_FD", "")
+    if (
+        not isinstance(name, str)
+        or not re.fullmatch(r"csl_test_[a-f0-9]{32}", name)
+        or not re.fullmatch(r"[0-9]{1,4}", descriptor)
+        or not 3 <= int(descriptor) <= 1024
+    ):
+        raise CapacityError("PRIVATE_MASK_CHANNEL_UNAVAILABLE")
+    try:
+        fd = int(descriptor)
+        if not stat.S_ISFIFO(os.fstat(fd).st_mode):
+            raise OSError
+        command = ("::add-mask::" + name + "\n").encode("ascii")
+        if os.write(fd, command) != len(command):
+            raise OSError
+    except OSError:
+        raise CapacityError("PRIVATE_MASK_CHANNEL_UNAVAILABLE") from None
 
 
 def source_metadata(root: Path, service: ServiceContract) -> dict[str, Any]:
@@ -86,10 +116,12 @@ class Provisioner:
         *,
         limits: Limits = DEFAULT_LIMITS,
         fault: Callable[[str], None] | None = None,
+        mask: Callable[[str], None] | None = None,
     ) -> None:
         self.admin, self.service, self.journal = admin, service, journal
         self.observe, self.limits = observe, limits
         self.fault = fault or (lambda stage: None)
+        self.mask = mask or mask_identifier
         self.conn: Any = None
         self.blocked = False
         self.created: list[str] = []
@@ -171,6 +203,7 @@ class Provisioner:
         attempted = False
         try:
             self.journal.append(intent)  # Must succeed durably before any CREATE.
+            self.mask(name)  # Must register before PostgreSQL can log this name.
             self.fault("intent")
             attempted = True
             self.conn.execute(

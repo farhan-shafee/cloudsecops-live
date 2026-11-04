@@ -13,6 +13,7 @@ import sys
 import tempfile
 import threading
 import xml.etree.ElementTree as ET
+from contextlib import ExitStack
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -73,6 +74,7 @@ PUBLIC_REASONS = {
     "CREATION_QUARANTINE_FAILED",
     "CREATED_DATABASE_IDENTITY_MISMATCH",
     "INVALID_CREATION_PURPOSE",
+    "PRIVATE_MASK_CHANNEL_UNAVAILABLE",
     "journal_invalid_record",
     "journal_unsafe_path",
     "journal_corrupt",
@@ -102,14 +104,22 @@ def run_private(command: list[str], diagnostic: Path) -> int:
     """Bound private output without buffering PostgreSQL exceptions in public logs."""
     limit = 8 * 1024**2
     failed = threading.Event()
-    with diagnostic.open("xb") as output:
+    with diagnostic.open("xb") as output, ExitStack() as descriptors:
         if sys.platform != "win32":
             diagnostic.chmod(0o600)
+        # Private pytest output stays captured. The only extra inherited channel
+        # goes directly to the Actions runner for strict pre-CREATE name masks.
+        # It is never a relay for arbitrary pytest text or evidence fields.
+        mask_fd = os.dup(sys.stdout.fileno())
+        descriptors.callback(os.close, mask_fd)
+        environment = {**os.environ, "CSL_TEST_MASK_FD": str(mask_fd)}
         with subprocess.Popen(
             command,
             cwd=ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=environment,
+            pass_fds=(mask_fd,),
         ) as process:
             assert process.stdout is not None
 

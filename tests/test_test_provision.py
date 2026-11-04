@@ -73,7 +73,15 @@ def harness(tmp_path: Path, *, fault=None, limits=DEFAULT_LIMITS):
     )
     service = SimpleNamespace(validate=lambda: None, cluster_id="123", postmaster_started="now")
     journal = Journal(tmp_path, "d" * 32, metadata())
-    return Provisioner(admin, service, journal, resources, limits=limits, fault=fault), conn
+    return Provisioner(
+        admin,
+        service,
+        journal,
+        resources,
+        limits=limits,
+        fault=fault,
+        mask=lambda name: None,
+    ), conn
 
 
 def test_connection_quarantine_is_part_of_create_and_precedes_acl(tmp_path):

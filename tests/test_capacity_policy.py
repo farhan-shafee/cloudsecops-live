@@ -39,7 +39,7 @@ def resources() -> dict[str, int]:
 def test_reviewed_limits_are_not_raised_to_accept_the_retained_cluster() -> None:
     reviewed = Limits()
     assert reviewed.max_databases == 200
-    assert reviewed.max_roles == 1024
+    assert reviewed.max_roles == 1536
     assert reviewed.role_reserve == 32
     assert reviewed.max_per_run == 192
 
@@ -58,14 +58,14 @@ def test_last_database_slot_is_accepted() -> None:
     evaluate_capacity({"database_count": 199, "role_count": 32}, resources())
 
 
-@pytest.mark.parametrize("role_count", [993, 1024, 9444])
+@pytest.mark.parametrize("role_count", [1505, 1536, 9444])
 def test_roles_require_space_for_the_reviewed_provisioning_reserve(role_count: int) -> None:
     with pytest.raises(CapacityError):
         evaluate_capacity({"database_count": 4, "role_count": role_count}, resources())
 
 
 def test_role_reservation_exact_boundary_is_accepted() -> None:
-    evaluate_capacity({"database_count": 4, "role_count": 992}, resources())
+    evaluate_capacity({"database_count": 4, "role_count": 1504}, resources())
 
 
 @pytest.mark.parametrize("field", ["database_count", "role_count"])

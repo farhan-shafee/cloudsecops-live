@@ -38,7 +38,7 @@ class CapacityError(Exception):
 @dataclass(frozen=True)
 class Limits:
     max_databases: int = 200
-    max_roles: int = 1024
+    max_roles: int = 1536
     role_reserve: int = 32
     max_per_run: int = 192
 

@@ -21,4 +21,4 @@
 
 ## Acceptance
 
-Existing successful hosted baseline:178created databases/174tests from a fresh four-database cluster. Proposed global cap200, role cap1024 with32reserved roles, unchanged192per-run cap. Role/resource thresholds are provisional until measured on this branch's disposable CI. Missing observations fail closed. No count, name or journal establishes disposal authority for historical resources.
+Existing successful hosted baseline:178created databases/174tests from a fresh four-database cluster. Global cap200, revised CI role cap1536 with32reserved roles, unchanged192per-run cap. The initial provisional1024-role budget was disproved by measured hosted execution (141creations/994roles); the revised role budget still requires complete passing CI and leaves the retained9444-role cluster blocked. Missing observations fail closed. No count, name or journal establishes disposal authority for historical resources.

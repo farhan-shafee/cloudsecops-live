@@ -63,7 +63,7 @@ line knobs for making a failing workstation pass.
 | Gate before database creation | Required bound |
 | --- | --- |
 | Total cluster databases, including templates/project DBs | New total must not exceed 200. |
-| Total cluster roles, including PostgreSQL predefined roles | Maximum 1,024; reserve 32 role slots before creation/provisioning. |
+| Total cluster roles, including PostgreSQL predefined roles | Maximum 1,536; reserve 32 role slots before creation/provisioning. |
 | Databases created by one run | At most 192. |
 | Free data filesystem | At least 2 GiB. |
 | Free physical Docker backing filesystem | At least 5 GiB. |
@@ -140,6 +140,15 @@ exercise process interruption and locking, not Windows directory power-loss dura
 Backup/restore helpers also require the enrolled CI service and a generated test target;
 they cannot fall back to host tools or the retained Compose service.
 
+CI's automatic post-job service-log capture is also a public boundary. Before each
+CREATE, the runner registers the generated database name with GitHub's masking command
+through one dedicated inherited stdout pipe. Only strict generated names are accepted;
+an absent, non-pipe or failed channel blocks creation. Pytest output remains private
+and cannot supply arbitrary workflow commands. PostgreSQL logging stays enabled.
+Earlier attempted CI runs exposed disposable generated names in automatic service logs;
+they remain historical artifacts and are not proof of current redaction. Final-head
+post-job logs must be checked independently for absence of unmasked generated names.
+
 ## Mandatory acceptance and delivery record
 
 The first hosted attempt stopped before creation on an invalid observation. Fixed-stage
@@ -148,6 +157,17 @@ match the queried directory. The corrected probe queries each fixed operand sepa
 frames its single bounded numeric row, and keeps Docker volume identity independent
 from display labels. Alias, missing-frame and ambiguous-row regressions preserve denial
 for unsupported measurements. No resource threshold was increased or bypassed.
+
+The subsequent complete hosted workload disproved the provisional 1,024-role budget:
+141 database creations reached 994 roles, and the reserve check correctly blocked the
+remaining work. All 35 unsuccessful cases reported that same cap; no resource or native
+crash was inferred. The revised **CI-only** role ceiling is 1,536, retaining the 32-role
+reserve. The remaining 37 expected creations use bounded tail fixtures (at most 13 roles
+per remaining creation, not all workflow fixtures), projecting fewer than 1,536 total
+roles including the reserve. This ceiling
+requires a successful complete disposable run and measured final/peak counts before GO.
+The 200-database, 192-per-run and every memory/disk/CPU/PID threshold are unchanged.
+The retained workstation's 9,444 roles remain disallowed; no local operation follows.
 
 Offline units exercise capacity boundaries, missing identity/observations, journal
 serialization/durability, malformed/truncated chains, error redaction and public-receipt

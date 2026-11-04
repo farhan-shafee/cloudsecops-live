@@ -21,7 +21,7 @@ The runner now requires an explicit disposable hosted-CI service contract and ca
 private journal. Local enrollment and implicit private-DSN fallback fail before any
 database connection. Whole-context advisory serialization prevents cooperating suites
 from overlapping, and every CREATE receives current global capacity/identity/resource
-checks. The fixed 200-database, 1,024-role/reserve-32 and 192-per-run bounds are ceilings,
+checks. The fixed 200-database, 1,536-role/reserve-32 and 192-per-run bounds are ceilings,
 not permission to use an already exhausted cluster. See the complete
 [capacity and provenance contract](PHASE1B_OPS1_SAFETY.md).
 

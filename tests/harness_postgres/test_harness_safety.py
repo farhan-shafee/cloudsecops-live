@@ -218,6 +218,7 @@ def child(directory: Path, stage: str) -> subprocess.CompletedProcess:
         [sys.executable, "-c", CHILD, str(directory), stage],
         cwd=ROOT,
         env=dict(os.environ),
+        pass_fds=(int(os.environ["CSL_TEST_MASK_FD"]),),
         capture_output=True,
         timeout=30,
         check=False,
