@@ -142,6 +142,13 @@ they cannot fall back to host tools or the retained Compose service.
 
 ## Mandatory acceptance and delivery record
 
+The first hosted attempt stopped before creation on an invalid observation. Fixed-stage
+diagnostics identified the data-filesystem lookup: `df`'s displayed mount label did not
+match the queried directory. The corrected probe queries each fixed operand separately,
+frames its single bounded numeric row, and keeps Docker volume identity independent
+from display labels. Alias, missing-frame and ambiguous-row regressions preserve denial
+for unsupported measurements. No resource threshold was increased or bypassed.
+
 Offline units exercise capacity boundaries, missing identity/observations, journal
 serialization/durability, malformed/truncated chains, error redaction and public-receipt
 allowlisting. Required real PostgreSQL tests run only on the separately identified

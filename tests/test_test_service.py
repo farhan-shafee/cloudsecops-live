@@ -19,9 +19,13 @@ CONTAINER = "a" * 64
 IMAGE_ID = "sha256:" + "b" * 64
 VOLUME = "c" * 64
 DSN = "host=127.0.0.1 port=5432 dbname=cloudsecops_lab user=cloudsecops_ci"
-PROBE = """Filesystem 1024-blocks Used Available Capacity Mounted on
+PROBE = """CSL_DATA_DISK
+Filesystem 1024-blocks Used Available Capacity Mounted on
 disk 10485760 1048576 9437184 10% /var/lib/postgresql/data
+CSL_SHM_DISK
+Filesystem 1024-blocks Used Available Capacity Mounted on
 shm 65536 8192 57344 13% /dev/shm
+CSL_CGROUP
 536870912
 125829120
 anon 104857600
@@ -279,7 +283,7 @@ def test_resource_probe_counts_distinct_memory_domains_without_double_counting(
         PROBE.replace("inactive_file 20971520\n", ""),
         PROBE.replace("100000 100000", "max 100000"),
         PROBE.replace("536870912", "max"),
-        PROBE.replace(" /dev/shm", " /different"),
+        PROBE.replace("CSL_SHM_DISK", "CSL_OTHER_DISK"),
         PROBE + "unexpected trailing line\n",
     ],
 )

@@ -34,11 +34,33 @@ from scripts.test_capacity import CapacityError, evaluate_capacity
 
 # Fixed read-only commands, no caller paths/commands interpolated into a shell.
 PROBE = r"""set -eu
-df -Pk /var/lib/postgresql/data /dev/shm
+printf 'CSL_DATA_DISK\n'
+df -Pk /var/lib/postgresql/data
+printf 'CSL_SHM_DISK\n'
+df -Pk /dev/shm
+printf 'CSL_CGROUP\n'
 cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current
 cat /sys/fs/cgroup/memory.stat /sys/fs/cgroup/memory.events
 cat /sys/fs/cgroup/pids.current /sys/fs/cgroup/pids.max /sys/fs/cgroup/cpu.max
 """
+
+
+def _disk_row(lines: list[str]) -> int:
+    # The validated operand and frame bind the measurement. df's display mount
+    # label may name a different bind on the same filesystem; it is not identity.
+    if len(lines) != 2 or not lines[0].startswith("Filesystem "):
+        raise ValueError
+    fields = lines[1].split()
+    if len(fields) != 6 or not fields[-1].startswith("/"):
+        raise ValueError
+    if any(not re.fullmatch(r"[0-9]{1,20}", part) for part in fields[1:4]):
+        raise ValueError
+    total, used, free = map(int, fields[1:4])
+    if total <= 0 or used > total or free > total:
+        raise ValueError
+    if not re.fullmatch(r"(?:100|[0-9]{1,2})%", fields[4]):
+        raise ValueError
+    return free * 1024
 
 
 def sanitized[**P, T](function: Callable[P, T]) -> Callable[P, T]:
@@ -205,13 +227,16 @@ def observe(root: Path, service: ServiceContract) -> dict[str, int]:
     lines = text.splitlines()
     stage = "DATA_FILESYSTEM"
     try:
-        # df emits one header and two filesystem lines; busybox wraps long names
-        # on some platforms, so obtain numeric rows by their mountpoint.
-        data = next(line.split() for line in lines if line.endswith(" /var/lib/postgresql/data"))
+        if lines.count("CSL_DATA_DISK") != 1 or lines[0] != "CSL_DATA_DISK":
+            raise ValueError
+        shm_start = lines.index("CSL_SHM_DISK")
+        data_free = _disk_row(lines[1:shm_start])
         stage = "SHARED_FILESYSTEM"
-        shm = next(line.split() for line in lines if line.endswith(" /dev/shm"))
-        df_end = max(i for i, line in enumerate(lines) if line.endswith(" /dev/shm"))
-        tail = lines[df_end + 1 :]
+        cgroup_start = lines.index("CSL_CGROUP")
+        if lines.count("CSL_SHM_DISK") != 1 or lines.count("CSL_CGROUP") != 1:
+            raise ValueError
+        shm_free = _disk_row(lines[shm_start + 1 : cgroup_start])
+        tail = lines[cgroup_start + 1 :]
         stage = "MEMORY_COUNTERS"
         memory_limit, memory_current = int(tail[0]), int(tail[1])
         stage = "MEMORY_EVENTS"
@@ -223,8 +248,8 @@ def observe(root: Path, service: ServiceContract) -> dict[str, int]:
         backing = shutil.disk_usage("/var/lib/docker").free
         stage = "RESULT_FIELDS"
         result = {
-            "data_free_bytes": int(data[-3]) * 1024,
-            "shm_free_bytes": int(shm[-3]) * 1024,
+            "data_free_bytes": data_free,
+            "shm_free_bytes": shm_free,
             "backing_free_bytes": backing,
             "memory_limit_bytes": memory_limit,
             "memory_current_bytes": memory_current,

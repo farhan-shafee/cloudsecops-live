@@ -193,7 +193,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pip install --no-deps --no-build-isolation -e .
       - name: Offline safety units and branch evidence
-        run: python -m pytest tests/test_capacity_policy.py tests/test_test_service.py tests/test_test_journal.py tests/test_test_provision.py --cov=scripts.test_capacity --cov=scripts.test_service --cov=scripts.test_provision --cov=scripts.test_journal --cov-branch --cov-fail-under=0 --cov-report=
+        run: python -m pytest tests/test_capacity_policy.py tests/test_test_service.py tests/test_probe_filesystems.py tests/test_test_journal.py tests/test_test_provision.py --cov=scripts.test_capacity --cov=scripts.test_service --cov=scripts.test_provision --cov=scripts.test_journal --cov-branch --cov-fail-under=0 --cov-report=
       - name: Required real capacity, quarantine, interruption and concurrency tests
         env:
           CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
