@@ -43,8 +43,12 @@ output contract and fixtures.
 
 ## Strict envelope
 
-The UTF-8 JSON object has exactly these keys. Timestamps use whole-second
-`YYYY-MM-DDTHH:MM:SSZ`; the requested interval is nonempty and at most 24 hours.
+The UTF-8 JSON object has exactly these keys. Serialized timestamps and the independently
+supplied requested start/end use whole-second `YYYY-MM-DDTHH:MM:SSZ`; the requested
+interval is nonempty and at most 24 hours. Retained `RetrievedLog` acquisition times
+remain UTC datetimes at their original precision, including microseconds. The receipt
+compares them exactly with the observation bracket, without rounding or truncation;
+naive or non-UTC retained times are rejected.
 
 | Key | Required content |
 | --- | --- |

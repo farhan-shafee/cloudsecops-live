@@ -4,7 +4,7 @@ import gzip
 import json
 from copy import deepcopy
 from dataclasses import replace
-from datetime import timedelta
+from datetime import timedelta, timezone
 from hashlib import sha256
 
 import pytest
@@ -583,3 +583,68 @@ def test_valid_json_number_overflow_cannot_smuggle_nonfinite_digest_metadata():
     entry["content"] = entry["content"].replace("{", '{"untrustedNumber":1e999,', 1)
     entry["source"]["content_sha256"] = sha256(entry["content"].encode()).hexdigest()
     rejected(receipt)
+
+
+def test_collector_retrieval_microseconds_preserve_receipt_consistency_without_authentication():
+    objects, receipt = fixture()
+    precise = replace(
+        objects[0],
+        retrieval_started=objects[0].retrieval_started.replace(microsecond=123),
+        retrieval_completed=objects[0].retrieval_completed.replace(microsecond=456),
+    )
+    result = assess(receipt, (precise,))
+    assert result.consistency_passed is True
+    assert result.state == "pending_source_authentication"
+    assert result.reason == "AWS_AUTHENTICATION_UNAVAILABLE"
+    assert result.authenticated is False
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("retrieval_started", BASE_TIME - timedelta(minutes=1, microseconds=1)),
+        ("retrieval_completed", BASE_TIME + timedelta(minutes=3, microseconds=1)),
+    ],
+)
+def test_fractional_retrieval_outside_observation_bracket_is_not_rounded_into_it(field, value):
+    objects, receipt = fixture()
+    precise = replace(objects[0], **{field: value})
+    result = rejected(receipt, objects=(precise,), state="conflicting")
+    assert result.reason == "AWS_CLI_RETRIEVAL_INTERVAL_CONFLICT"
+
+
+def test_retrieval_order_within_one_second_is_compared_without_rounding():
+    objects, receipt = fixture()
+    precise = replace(
+        objects[0],
+        retrieval_started=BASE_TIME.replace(microsecond=456),
+        retrieval_completed=BASE_TIME.replace(microsecond=123),
+    )
+    result = rejected(receipt, objects=(precise,), state="conflicting")
+    assert result.reason == "AWS_CLI_RETRIEVAL_INTERVAL_CONFLICT"
+
+
+@pytest.mark.parametrize("field", ["retrieval_started", "retrieval_completed"])
+@pytest.mark.parametrize("kind", ["naive", "non-utc"])
+def test_retrieval_precision_support_still_requires_explicit_utc(field, kind):
+    objects, receipt = fixture()
+    value = getattr(objects[0], field).replace(microsecond=123)
+    value = (
+        value.replace(tzinfo=None)
+        if kind == "naive"
+        else value.astimezone(timezone(timedelta(hours=1)))
+    )
+    result = rejected(receipt, objects=(replace(objects[0], **{field: value}),), state="invalid")
+    assert result.reason == "AWS_CLI_RECEIPT_TIME"
+
+
+@pytest.mark.parametrize("field", ["start", "end"])
+def test_requested_cli_interval_keeps_its_whole_second_contract(field):
+    objects, receipt = fixture()
+    start = START.replace(microsecond=123) if field == "start" else START
+    end = END.replace(microsecond=456) if field == "end" else END
+    result = assess_cli_receipt(objects, scope(), start, end, encode(receipt))
+    assert result.state == "invalid"
+    assert result.reason == "AWS_CLI_RECEIPT_TIME"
+    assert result.consistency_passed is False
+    assert result.authenticated is False

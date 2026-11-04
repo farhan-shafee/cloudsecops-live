@@ -12,24 +12,24 @@ verified without claiming otherwise. Work uses `codex/phase1b-aws1-guarded-trans
 
 ## Executed local acceptance
 
-On2026-11-04, Python3.14.8 completed **1,395unit tests and11subtests, no failures/skips**
-in90.53seconds on the frozen implementation. This includes269independently authored
+On2026-11-04, Python3.14.8 completed **1,405unit tests and11subtests, no failures/skips**
+in89.80seconds on the corrected implementation. This includes279independently authored
 SDK/receipt cases plus8new boundary/CI/coverage tests. All old1,118units remain present.
-The previous pre-wire-fix run is not used as final corrected-source acceptance.
+Earlier runs are not used as final corrected-source acceptance.
 
 Actual branch counters, not combined line/branch percentages:
 
 | New module | Covered branches / total | Branch coverage |
 | --- | ---: | ---: |
 | `integrations/aws_sdk/transport.py` |168/192 |87.50% |
-| `integrations/aws_cloudtrail/cli_receipts.py` |143/162 |88.27% |
+| `integrations/aws_cloudtrail/cli_receipts.py` |146/164 |89.02% |
 
 Original ingestion/detection and five offline-AWS module gates are retained, as are the
 full-database package line and thirteen application-security branch gates. No exclusions
 were added. Local unit-only coverage cannot establish execution of database paths.
 
 Ruff format/lint, strict mypy (37source files), structural Terraform check, secret/private
-identifier scan (186files at the recorded scan), dependency compatibility, hash-locked
+identifier scan (187files at the recorded scan), dependency compatibility, hash-locked
 pip-audit (no known vulnerabilities), sdist/wheel build and isolated wheel import/demo
 passed. SDK versions are boto3/botocore1.43.123; CLI output contract is AWS CLI2.37.11,
 not an installed or executed AWS CLI. Official SDK/transitive licenses were reviewed and
@@ -73,6 +73,18 @@ compatibility defect; corrected behavior passes actual botocore HEAD parsing for
 and2MiB object metadata with zero response-body bytes. Tests also cover replaced HTTP
 sessions/send guards, malformed lengths, no-read1 bodies and interrupted/error streams.
 The independent reviewer reported no remaining material finding after those corrections.
+
+Fresh published-head review on PR#7 at `c3c0ed9bf568f24d7404efe78586275263d87338`
+then identified a P2 precision defect: the receipt validator incorrectly required
+whole-second retained retrieval datetimes, although the collector preserves fractional
+UTC clocks. Root and an independent test author reproduced it before correction. A
+separate retained-time validator now preserves fractions in exact bracket comparisons;
+requested interval and serialized receipt timestamps remain strict whole-second UTC.
+Ten new tests cover123/456microseconds, exact outside-bracket and reversed fractions,
+naive/non-UTC rejection and strict request precision. A second reviewer independently
+checked23precision/boundary cases without finding a remaining material issue. The full
+1,405-unit run and rebuilt isolated wheel above include this fix. Fresh corrected-head
+CI/re-review is required; the original review and CI cannot approve the changed commit.
 
 DNS, response headers and HTTP chunk framing still lack hard wall-clock cancellation.
 This is an explicit unmet future live-runner gate, not a claimed total deadline.

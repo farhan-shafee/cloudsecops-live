@@ -135,6 +135,13 @@ def _time(value: object) -> datetime:
     return value.astimezone(UTC)
 
 
+def _retrieval_time(value: object) -> datetime:
+    """Retain collector clock precision for exact source-observation comparisons."""
+    if type(value) is not datetime or value.utcoffset() != timedelta(0):
+        _fail("AWS_CLI_RECEIPT_TIME")
+    return value.astimezone(UTC)
+
+
 def _stamp(value: object) -> datetime:
     if not isinstance(value, str) or re.fullmatch(_DATE, value) is None:
         _fail("AWS_CLI_RECEIPT_TIME")
@@ -462,8 +469,8 @@ def _assess(
             _fail("AWS_CLI_EXPECTED_SOURCE_CONFLICT", "conflicting")
         if not (
             _stamp(obs["before_observed_at"])
-            <= _time(obj.retrieval_started)
-            <= _time(obj.retrieval_completed)
+            <= _retrieval_time(obj.retrieval_started)
+            <= _retrieval_time(obj.retrieval_completed)
             <= _stamp(obs["after_observed_at"])
         ):
             _fail("AWS_CLI_RETRIEVAL_INTERVAL_CONFLICT", "conflicting")
