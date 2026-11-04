@@ -1,5 +1,54 @@
 # Local failure and recovery runbook
 
+## Phase1B-OPS-1: stop local acceptance and preserve provenance
+
+The current retained workstation cluster remains **NO-GO** for complete PostgreSQL
+acceptance. Do not run the historical local setup or integration commands below on it.
+This milestone authorizes source changes and disposable hosted-CI tests only: no
+retained-database connection, cleanup, restart, volume change or resource-limit increase.
+PR#7 was normally merged as `1400427df348b06f47e1415e8734aa82bf074305`, tree
+`9fad3b5d56afbc4dfe610e08d26a6b39854267f0`; the harness correction stays on its separate
+unmerged review branch.
+
+The follow-up read-only inventory counted 2,442 databases and 9,444 roles. It preserved
+the 61/64 MiB shared-memory observation, actual 32 MiB allocation failure and historical
+native SIGSEGV. The allocator-growth and native-crash causes remain unproven. All
+retained databases/roles, both volumes, backups, case history, migration receipts and
+legacy NUL evidence remain protected. A generated-looking name, missing configuration
+reference, inactivity or passing CI grants no disposal authority.
+
+The runner now requires an explicit disposable hosted-CI service contract and canonical
+private journal. Local enrollment and implicit private-DSN fallback fail before any
+database connection. Whole-context advisory serialization prevents cooperating suites
+from overlapping, and every CREATE receives current global capacity/identity/resource
+checks. The fixed 200-database, 1,024-role/reserve-32 and 192-per-run bounds are ceilings,
+not permission to use an already exhausted cluster. See the complete
+[capacity and provenance contract](PHASE1B_OPS1_SAFETY.md).
+
+New targets are created with `ALLOW_CONNECTIONS false`, recorded with exact private
+name/OID/owner/cluster/storage bindings, and denied PUBLIC database privileges before
+maintenance connections are enabled. A `ready` journal transition is still pending
+migration completion. Only `provisioned` or an explicit `rejected` terminal state closes
+an attempt; a `migrate=False` target records `unmigrated_target_ready` rather than
+pretending a migration or restore finished. The private append-only journal remains
+outside temporary pytest output. Missing, torn, mismatched or incomplete provenance
+blocks later creation and requires separately authorized operator review. It never
+causes automatic recreation, adoption, deletion or journal repair.
+
+Preserve the existing full PostgreSQL/HTTPS/recovery/backup suites in sequential hosted
+jobs and the new separate `PostgreSQL harness safety` fault-injection service. All retain
+the reviewed 512 MiB/one CPU/64 MiB shared-memory/128-PID limits. Exact-head test counts,
+resource peaks, coverage and review results are pending execution, not assumed from the
+workflow. Public artifacts must exclude private database identifiers, journals, DSNs,
+dumps and raw exception/log output. Keep only allowlisted sanitized receipts.
+
+Future local acceptance needs a separate authorized recovery decision and supported local
+service contract. A separately named fresh environment could avoid the full retained
+pool but would not explain the original crash. Any cleanup proposal needs independently
+reviewed provenance, exact owner allowlists, preservation/hold checks, backups and verified
+restores; no cleanup mechanism or command is implemented here. See the
+[GitHub governance plan](TEST_HARNESS_GOVERNANCE.md); protection settings are unchanged.
+
 Phase1B-AWS-1 adds no database schema or AWS intake path. Rejected SDK/CLI observations
 remain outside accepted synthetic evidence; no receipt can grant authentication or
 closure. Keep originals/version observations privately when diagnosing a future approved
@@ -37,7 +86,12 @@ Phase1A-3B adds migration003 and twelve workflow/verifier/pipeline-identity tabl
 
 ## Reproducible setup
 
-Run from the repository root with Python 3.12 or 3.14 and Docker Desktop/Engine available:
+Historical setup for a future separately authorized local environment follows. It is
+not approved for execution on the currently blocked workstation. Starting services,
+provisioning roles, migrations and application writes require their own owner permission
+and capacity review. The new CI-only integration harness provides no local enrollment.
+When those future prerequisites have been separately satisfied, the historical commands
+use Python 3.12 or 3.14 from the repository root:
 
 ```powershell
 py -3.14 -m venv .venv
@@ -78,11 +132,22 @@ CLI codes: `0` completed requested operation, `2` validation/configuration/integ
 
 ## Independent recovery test and retained evidence
 
+The command below is the hosted-CI runner entry point. It rejects an ordinary local
+invocation before connecting, and no retained private DSN is discovered automatically.
+Do not set CI-looking environment variables or manufacture a service contract to bypass
+the local stop. Only the reviewed disposable hosted service may supply the contract.
+
 ```powershell
 .\.venv\Scripts\python.exe scripts/run_integration.py --receipt .tools/receipts/local.json
 ```
 
-This requires PostgreSQL and fails if it is absent. The harness creates only fresh `csl_test_...` databases, exercises migrations, concurrency, faults, real child termination, session interruption and backup/restore, and writes sanitized execution evidence under `.tools/`. It never deletes a database. Reruns use fresh instances; retained test databases consume disk space. Check capacity between runs. Destructive cleanup requires an operator's explicit list/scope and a separate decision after preserving needed evidence. Never run global Docker pruning.
+In its authorized hosted environment this requires PostgreSQL and fails if it is absent.
+The harness creates only fresh, journaled connection-quarantined targets after global
+capacity checks, exercises migrations, concurrency, faults, real child termination,
+session interruption and backup/restore, and writes sanitized execution evidence under
+`.tools/`. It never deletes a database. Reruns cannot bypass unresolved provenance or
+cluster-wide caps. Destructive cleanup requires a separate owner decision and exact
+allowlist after preserving needed evidence. Never run global Docker pruning.
 
 CI supplies a disposable PostgreSQL service and test-only credentials. No AWS or production credentials are involved. Required integration jobs cannot silently skip. Dumps remain private; retain only sanitized test counts, versions, fixture hashes and command/source identities for review.
 

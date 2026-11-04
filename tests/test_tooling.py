@@ -48,6 +48,7 @@ def test_workflow_can_be_loaded_as_yaml_with_executable_string_steps() -> None:
         "dependency-audit",
         "postgres-integration",
         "native-terraform",
+        "harness-safety",
     }
     # GitHub's job context is available to step env, not jobs.<job_id>.env.
     postgres = document["jobs"]["postgres-integration"]

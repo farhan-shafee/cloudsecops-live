@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import json
 import os
-import uuid
 from collections.abc import Callable
 from pathlib import Path
 
 import psycopg
 import pytest
-from psycopg import sql
-from psycopg.conninfo import make_conninfo
 
 from cloudsecops_live.database import Database
 from cloudsecops_live.errors import EvidenceError
+from scripts.test_capacity import CapacityError
+from scripts.test_journal import JournalError
+from scripts.test_provision import build_provisioner
+from scripts.test_service import admin_from_environment, load
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,18 +30,10 @@ def admin_database(value: str) -> Database:
 
 @pytest.fixture(scope="session")
 def admin_db(record_testsuite_property) -> Database:
-    value = os.environ.get("CSL_TEST_DSN")
-    if not value:
-        for name in ("phase1a2-dsn.json", "local-postgres.json"):
-            path = ROOT / ".tools" / "private" / name
-            if path.is_file():
-                value = json.loads(path.read_text(encoding="utf-8"))["dsn"]
-                break
-    if not value:
-        pytest.fail("PostgreSQL required: set CSL_TEST_DSN to the isolated loopback test service")
     try:
-        db = admin_database(value)
-    except EvidenceError:
+        db = admin_from_environment()
+        load(ROOT)
+    except (EvidenceError, CapacityError, OSError):
         pytest.fail("Invalid test database configuration", pytrace=False)
     # Do not interpolate connection exceptions: drivers may include private DSNs.
     try:
@@ -56,40 +49,34 @@ def admin_db(record_testsuite_property) -> Database:
 def db_factory(
     admin_db: Database, request: pytest.FixtureRequest, record_testsuite_property
 ) -> Callable[..., Database]:
-    created: list[str] = []
-    request.addfinalizer(
-        lambda: record_testsuite_property("retained_databases_created", len(created))
-    )
+    # No implicit local enrollment: runner must have enrolled a fresh hosted service.
+    try:
+        provisioner = build_provisioner(ROOT)
+        provisioner.__enter__()
+    except (CapacityError, JournalError, EvidenceError, psycopg.Error, OSError) as exc:
+        code = (
+            str(exc) if isinstance(exc, (CapacityError, JournalError)) else "TEST_DATABASE_FAILURE"
+        )
+        pytest.fail("Required test capacity or provenance unavailable: " + code, pytrace=False)
+
+    def finish() -> None:
+        record_testsuite_property("retained_databases_created", len(provisioner.created))
+        record_testsuite_property("capacity_summary", json.dumps(provisioner.public_summary()))
+        provisioner.__exit__(None, None, None)
+
+    request.addfinalizer(finish)
 
     def create(*, migrate: bool = True) -> Database:
-        # The reviewed-workflow suite has over 146 cases plus restore/upgrade targets.
-        # Retain a finite 192-database ceiling after checking host/volume capacity.
-        if len(created) >= 192:
-            pytest.fail("Per-run retained test database cap reached")
-        name = "csl_test_" + uuid.uuid4().hex
         try:
-            with admin_db.connect() as conn:
-                conn.autocommit = True
-                conn.execute(
-                    sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(name))
-                )
-                # Quarantine fresh/restore targets before any definer functions exist.
-                # Only the maintenance owner can connect until security is reconstructed.
-                conn.execute(
-                    sql.SQL("REVOKE CONNECT ON DATABASE {} FROM PUBLIC").format(
-                        sql.Identifier(name)
-                    )
-                )
-        except psycopg.Error:
-            pytest.fail("Could not create retained scoped test database", pytrace=False)
-        created.append(name)
-        db = Database(make_conninfo(**{**admin_db._values, "dbname": name}))
-        if migrate:
-            from cloudsecops_live.workspace_roles import setup_roles
-
-            setup_roles(db)
-            db.migrate()
-        return db
+            # pytest's current node includes setup/call phase; bounded private journal only.
+            test = os.environ.get("PYTEST_CURRENT_TEST", "session_fixture")
+            return provisioner.create(
+                migrate=migrate,
+                test=test,
+                purpose="migration" if migrate else "restore_upgrade",
+            )
+        except (CapacityError, JournalError, EvidenceError, psycopg.Error, OSError):
+            pytest.fail("Test creation blocked; private provenance requires review", pytrace=False)
 
     return create
 

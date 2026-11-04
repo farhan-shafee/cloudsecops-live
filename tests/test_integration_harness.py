@@ -60,12 +60,15 @@ def test_backup_environment_does_not_inherit_libpq_overrides_or_password(monkeyp
 
 def test_ci_backup_uses_empty_explicit_docker_config(monkeypatch, tmp_path):
     from subprocess import CompletedProcess
+    from types import SimpleNamespace
 
     from tests.integration import test_backup
 
     monkeypatch.setenv("CSL_POSTGRES_CONTAINER", "a" * 64)
     monkeypatch.setenv("DOCKER_CONFIG", str(tmp_path / "unrelated-default-context"))
     monkeypatch.setattr(test_backup, "ROOT", tmp_path)
+    monkeypatch.setattr(test_backup, "require_hosted", lambda: None)
+    monkeypatch.setattr(test_backup, "load", lambda root: SimpleNamespace(container_id="a" * 64))
     commands = []
 
     def capture(command, **kwargs):
@@ -73,6 +76,18 @@ def test_ci_backup_uses_empty_explicit_docker_config(monkeypatch, tmp_path):
         return CompletedProcess(command, 0, stdout=b"dump", stderr=b"")
 
     monkeypatch.setattr(test_backup.subprocess, "run", capture)
-    assert test_backup.pg_command(admin_database(SAFE), "pg_dump", []) == b"dump"
+    target = admin_database(SAFE + " dbname=csl_test_" + "f" * 32)
+    assert test_backup.pg_command(target, "pg_dump", []) == b"dump"
     assert commands[0][:3] == ["docker", "--config", str(tmp_path / ".tools" / "docker-client")]
     assert not (tmp_path / ".tools" / "docker-client" / "config.json").exists()
+
+
+def test_backup_helper_never_falls_back_to_retained_service(monkeypatch):
+    from scripts.test_capacity import CapacityError
+    from tests.integration.test_backup import pg_command
+
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.delenv("CSL_POSTGRES_CONTAINER", raising=False)
+    monkeypatch.setattr("subprocess.run", lambda *a, **k: pytest.fail("Fallback command executed"))
+    with pytest.raises(CapacityError, match="DISPOSABLE_HOSTED_SERVICE_REQUIRED"):
+        pg_command(admin_database(SAFE), "pg_restore", [])
