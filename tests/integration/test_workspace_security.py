@@ -677,10 +677,10 @@ def test_restricted_sql_credentials_cannot_escalate_or_cross_account(workspace):
                 "CREATE ROLE workspace_escalated",
                 "ALTER DEFAULT PRIVILEGES FOR ROLE csl_ws_owner IN SCHEMA csl "
                 "GRANT ALL ON TABLES TO PUBLIC",
-                "SELECT csl.ws_account('" + token + "')",
+                "SELECT csl.ws_account(%s)",
             ]
             if kind == "auth_dsn":
-                denied.append("SELECT csl.ws_list_cases('" + token + "')")
+                denied.append("SELECT csl.ws_list_cases(%s)")
                 denied.append("SET ROLE csl_ws_reader")
             else:
                 denied.append("SELECT csl.ws_password_hash()")
@@ -690,7 +690,18 @@ def test_restricted_sql_credentials_cannot_escalate_or_cross_account(workspace):
             for index, statement in enumerate(denied):
                 with restricted.connect() as conn:
                     try:
-                        conn.execute(statement)
+                        # Keep the actual bearer out of PostgreSQL STATEMENT logs;
+                        # these remain the same denied function calls and inputs.
+                        parameters = (
+                            (token,)
+                            if statement
+                            in {
+                                "SELECT csl.ws_account(%s)",
+                                "SELECT csl.ws_list_cases(%s)",
+                            }
+                            else ()
+                        )
+                        conn.execute(statement, parameters)
                     except psycopg.Error:
                         pass
                     else:

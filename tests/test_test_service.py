@@ -377,6 +377,7 @@ def test_sql_identity_observes_only_fixed_catalog_identity():
         "postmaster_started": "2026-11-04 12:00:00+00",
         "owner": "cloudsecops_ci",
         "database": "cloudsecops_lab",
+        "error_parameters": "0",
     }
     calls = []
 
@@ -387,7 +388,37 @@ def test_sql_identity_observes_only_fixed_catalog_identity():
 
     assert service.sql_identity(FakeConnection()) == expected
     assert "pg_control_system()" in calls[0]
+    assert "current_setting('log_parameter_max_length_on_error')" in calls[0]
     assert "pg_authid" not in calls[0]
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        {},
+        {"error_parameters": None},
+        {"error_parameters": ""},
+        {"error_parameters": "-1"},
+        {"error_parameters": "1"},
+        {"error_parameters": "128"},
+        {"error_parameters": "false"},
+        {"error_parameters": 0},
+        {"error_parameters": False},
+        {"error_parameters": " 0"},
+        {"error_parameters": "0\n"},
+    ],
+)
+def test_unsafe_or_unobserved_error_parameter_logging_blocks_service_identity(settings):
+    row = {
+        "cluster_id": "123456789",
+        "postmaster_started": "2026-11-04 12:00:00+00",
+        "owner": "cloudsecops_ci",
+        "database": "cloudsecops_lab",
+        **settings,
+    }
+    connection = SimpleNamespace(execute=lambda *_args: SimpleNamespace(fetchone=lambda: row))
+    with pytest.raises(CapacityError, match="^TEST_SERVICE_LOGGING_UNSAFE$"):
+        service.sql_identity(connection)
 
 
 @pytest.mark.parametrize(

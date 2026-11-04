@@ -45,6 +45,7 @@ class Connection:
                 "postmaster_started": "now",
                 "owner": "cloudsecops_ci",
                 "database": "cloudsecops_lab",
+                "error_parameters": "0",
             }
         elif "pg_try_advisory_lock" in text:
             self.last = {"held": self.lock}

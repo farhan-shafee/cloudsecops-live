@@ -11,13 +11,11 @@ The verified starting main is `1400427df348b06f47e1415e8734aa82bf074305`, tree
 `9fad3b5d56afbc4dfe610e08d26a6b39854267f0`, the normal merge of PR #7. The dedicated
 branch is `codex/phase1b-ops1-test-harness-safety`.
 
-The preceding read-only investigation found 2,442 retained databases and 9,444 roles,
-61/64 MiB POSIX shared-memory use and a PostgreSQL failure to allocate another 32 MiB.
-The container was healthy without a new restart or OOM kill in the observed window.
-All ten inspected POSIX segments were mapped by a live PostgreSQL process; they were
-not established to be orphaned. Retained database/catalog/statistics accumulation is a
-plausible contributor, not proof of the allocator's purpose or the native-crash cause.
-The historical SIGSEGV remains unexplained. A healthy status does not prove capacity.
+The private readiness investigation established a retained-cluster capacity blocker.
+Detailed workstation measurements and diagnostic receipts remain private. Retained
+database/catalog/statistics accumulation is a plausible contributor, not proof of the
+allocator's purpose or the previously documented native-crash cause. The historical
+SIGSEGV remains unexplained. A healthy status does not prove capacity.
 
 The private preservation decision authorizes zero deletions. Preserve all retained
 databases and roles, project and acceptance volumes, backups, diagnostics, migration
@@ -83,8 +81,8 @@ The existing successful hosted acceptance receipts recorded 174 tests and 178 da
 creations on Python 3.12 and 3.14. A fresh four-database service would finish that workload
 at approximately 182 databases. The 200-global and 192-run bounds retain a small finite
 margin while preventing repeated successful runs from accumulating indefinitely. The
-32-MiB allocation failure motivates 36 MiB shared-memory headroom: room for that request
-plus a small margin, not evidence that 36 MiB fixes the historical SIGSEGV.
+36 MiB shared-memory headroom reserves room for a 32 MiB dynamic segment plus a small
+margin. This policy is not evidence that it fixes the historical SIGSEGV.
 
 Prior CI did not record global role peaks or all resource extrema. The role, disk,
 working-set and process margins are conservative acceptance policies that must be
@@ -149,6 +147,14 @@ Earlier attempted CI runs exposed disposable generated names in automatic servic
 they remain historical artifacts and are not proof of current redaction. Final-head
 post-job logs must be checked independently for absence of unmasked generated names.
 
+The completed service-log audit also found an existing negative SQL test placing a test
+session bearer in a literal query. Those same denied calls now bind the exact token as
+a parameter; no account, query, denial assertion or rollback is removed. The service
+contract requires `log_parameter_max_length_on_error=0` before every creation, rejecting
+missing or unsafe observations. Error/native-crash messages remain enabled. Completed
+final-head service logs must demonstrate both zero unmasked generated database names
+and zero literal test session bearers; older log exposure is not retroactively repaired.
+
 ## Mandatory acceptance and delivery record
 
 The first hosted attempt stopped before creation on an invalid observation. Fixed-stage
@@ -167,7 +173,7 @@ per remaining creation, not all workflow fixtures), projecting fewer than 1,536 
 roles including the reserve. This ceiling
 requires a successful complete disposable run and measured final/peak counts before GO.
 The 200-database, 192-per-run and every memory/disk/CPU/PID threshold are unchanged.
-The retained workstation's 9,444 roles remain disallowed; no local operation follows.
+The retained workstation remains disallowed; no local operation follows.
 
 A complete 178-creation run then reached 1,219 roles, establishing role-budget headroom,
 but passed only 173/174 cases: revoking all PUBLIC database privileges had removed TEMP

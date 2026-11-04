@@ -201,11 +201,14 @@ def sql_identity(conn: Any) -> dict[str, str]:
     row: dict[str, str] = conn.execute(
         "SELECT system_identifier::text AS cluster_id, "
         "pg_postmaster_start_time()::text AS postmaster_started, "
-        "current_user AS owner, current_database() AS database "
+        "current_user AS owner, current_database() AS database, "
+        "current_setting('log_parameter_max_length_on_error') AS error_parameters "
         "FROM pg_catalog.pg_control_system()"
     ).fetchone()
     if not row or row["owner"] != "cloudsecops_ci" or row["database"] != "cloudsecops_lab":
         raise CapacityError("TEST_SERVICE_IDENTITY_MISMATCH")
+    if row.get("error_parameters") != "0":
+        raise CapacityError("TEST_SERVICE_LOGGING_UNSAFE")
     return row
 
 
