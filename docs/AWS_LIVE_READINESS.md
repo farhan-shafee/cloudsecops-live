@@ -1,5 +1,7 @@
 # AWS live readiness: owner decision packet
 
+Phase1B-AWS-2 prepares [offline runner controls](architecture/AWS_SECURE_RUNNER.md), not execution permission. Before read-only inspection the owner still needs an exact approved non-root temporary role/immutable ID, actual issuance/expiry and private delivery, effective IAM/boundary/SCP review, a fixed trusted worker assembly, verified CLI2.37.11 artifacts and bounded internal calls, private receipts and a stop/recovery owner. No credential is read here. The earlier ChatGPT AWS connection must not be assumed suitable. Source authentication, provisioning, test activity and cleanup remain separate permissions.
+
 Status: **NO-GO for live access or provisioning**. Phase1B-AWS-1 prepares offline code.
 There is no live collection command or authenticated-source constructor. Completing this
 packet does not itself authorize AWS access. Keep the signed decision record, resolved

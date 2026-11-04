@@ -1,5 +1,7 @@
 # Offline AWS foundation operations
 
+AWS2 adds prepared runner tests, not a live operator command. Run `.venv/Scripts/python.exe -m pytest tests/test_aws_runner_process.py tests/test_aws_runner_faults.py tests/test_aws_runner_contracts.py tests/test_aws_cli_preflight.py tests/test_aws_runner_sdk_budget.py -q` (Linux: `.venv/bin/python`). Simulations bind numeric loopback only. No AWS CLI invocation, SDK connection, credential lookup or local PostgreSQL suite is authorized. Retain only allowlisted lifecycle/budget/preflight dictionaries; their false authentication/closure fields are mandatory. See [architecture](architecture/AWS_SECURE_RUNNER.md) and [lab](labs/PHASE1B_AWS2_INTERVIEW_LAB.md).
+
 ## Phase1B-AWS-1 guarded adapter
 
 The new `integrations/aws_sdk` package implements the read transport through injected

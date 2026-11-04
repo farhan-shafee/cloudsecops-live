@@ -1,5 +1,7 @@
 # Interview mastery and practical assessment
 
+Phase1B-AWS-2 adds the [secure runner no-AI lab](labs/PHASE1B_AWS2_INTERVIEW_LAB.md): total deadlines versus socket timeouts, native owned-process cleanup, immutable session identity, aggregate budgets, CLI provenance observations and unauthenticated receipts. Demonstrate loopback stalls and cancellation without AWS, retained databases or unrelated process changes.
+
 Phase1B-AWS-1 adds a [guarded SDK and receipt practical lab](labs/PHASE1B_AWS1_INTERVIEW_LAB.md)
 using real code paths, fictional sessions, stubbed services and controlled failures.
 Assess IAM sessions, STS boundaries, version pagination, bucket-owner protection, chain
