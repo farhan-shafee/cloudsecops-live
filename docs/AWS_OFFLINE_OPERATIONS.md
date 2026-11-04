@@ -1,5 +1,29 @@
 # Offline AWS foundation operations
 
+## Fixed workers: Phase1B-AWS-3
+
+After the normal hash-locked Python setup, these commands use only fictional data:
+
+```powershell
+.venv\Scripts\python.exe -m pytest tests/test_aws3_sessions.py tests/test_aws3_registry.py tests/test_aws3_workers.py tests/test_aws3_sdk_binding.py tests/test_aws3_permissions.py tests/test_aws3_boundaries.py -q
+.venv\Scripts\python.exe scripts/check_aws3_permissions.py
+.venv\Scripts\python.exe scripts/check_terraform.py
+```
+
+The named library facades have no live command, client factory or credential input.
+Posture accepts empty trail/bucket inventory, scopes IAM reads to explicit policy
+names and requires owner review for unknown metadata. Collection preserves exact
+versions, both hashes and full-record conflicts; fixture verification uses a distinct
+role binding and independently supplied content hashes. Every output remains
+unauthenticated. See [architecture and live blockers](architecture/AWS_FIXED_WORKERS.md)
+and [permission differences](PHASE1B_AWS3_PERMISSION_DIFFERENCES.md).
+
+Run full PostgreSQL acceptance only in the identified disposable hosted-CI service;
+do not point these commands at retained databases or start a stopped local cluster.
+No AWS credentials, SDK sessions, validation CLI, Terraform plan or cloud requests
+are needed. Historical failed Windows ACL-probe evidence and successful retry stay
+separate; the intermittent cause and PostgreSQL SIGSEGV remain unproven.
+
 AWS2 adds prepared runner tests, not a live operator command. Run `.venv/Scripts/python.exe -m pytest tests/test_aws_runner_process.py tests/test_aws_runner_faults.py tests/test_aws_runner_contracts.py tests/test_aws_cli_preflight.py tests/test_aws_runner_sdk_budget.py -q` (Linux: `.venv/bin/python`). Simulations bind numeric loopback only. No AWS CLI invocation, SDK connection, credential lookup or local PostgreSQL suite is authorized. Retain only allowlisted lifecycle/budget/preflight dictionaries; their false authentication/closure fields are mandatory. See [architecture](architecture/AWS_SECURE_RUNNER.md) and [lab](labs/PHASE1B_AWS2_INTERVIEW_LAB.md).
 
 ## Phase1B-AWS-1 guarded adapter

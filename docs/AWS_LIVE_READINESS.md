@@ -1,5 +1,22 @@
 # AWS live readiness: owner decision packet
 
+Phase1B-AWS-3 supplies [fixed fixture-only workers](architecture/AWS_FIXED_WORKERS.md)
+and explicit role/session/MFA consistency contracts. It does not supply credential
+delivery, actual temporary issuance or network-enabled live assembly. The owner's
+November4 audit is dated input: separate metadata-only inspection from future
+collector and verifier identities. The existing inspection role must not receive
+evidence-object reads. Exact live policy bytes and current effective authorization
+are unverified; see the [source difference report](PHASE1B_AWS3_PERMISSION_DIFFERENCES.md).
+
+Before a new read-only run, privately approve current account/role/immutable RoleId,
+MFA issuance evidence, short-lived expiry, session owner/custody, fixed APIs, numeric
+budgets, time window and stop responsibility. Do not reuse a root/admin IAM-user
+connection or infer session issuance from policy simulation. The dated lack of trails
+and buckets does not authorize creating them. Historical budget alerts are not caps
+or spending authorization. Prior one-time inspection permission does not authorize a
+new session. Provisioning, test activity, collection/authentication and cleanup each
+need their own explicit scope and approval.
+
 Phase1B-AWS-2 prepares [offline runner controls](architecture/AWS_SECURE_RUNNER.md), not execution permission. Before read-only inspection the owner still needs an exact approved non-root temporary role/immutable ID, actual issuance/expiry and private delivery, effective IAM/boundary/SCP review, a fixed trusted worker assembly, verified CLI2.37.11 artifacts and bounded internal calls, private receipts and a stop/recovery owner. No credential is read here. The earlier ChatGPT AWS connection must not be assumed suitable. Source authentication, provisioning, test activity and cleanup remain separate permissions.
 
 Status: **NO-GO for live access or provisioning**. Phase1B-AWS-1 prepares offline code.

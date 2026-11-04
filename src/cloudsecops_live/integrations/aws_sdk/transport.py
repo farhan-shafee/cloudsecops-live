@@ -394,6 +394,39 @@ class _GuardedRaw(RawIOBase):
 _DEFAULT_LIMITS = TransportLimits()
 
 
+def _credential_components(value: object, account: str) -> tuple[str, str, str, str | None]:
+    """Snapshot injected static material only; never resolve or refresh credentials."""
+    if type(value) is not Credentials or set(vars(value)) != {
+        "access_key",
+        "secret_key",
+        "token",
+        "method",
+        "account_id",
+    }:
+        raise EvidenceError("AWS_SDK_CREDENTIAL_BINDING")
+    credentials = cast(Any, value)  # The pinned SDK does not publish typed credentials.
+    if credentials.method != "explicit":
+        raise EvidenceError("AWS_SDK_CREDENTIAL_BINDING")
+    access, secret, token, credential_account = (
+        credentials.access_key,
+        credentials.secret_key,
+        credentials.token,
+        credentials.account_id,
+    )
+    if (
+        type(access) is not str
+        or not 1 <= len(access) <= 128
+        or type(secret) is not str
+        or not 1 <= len(secret) <= 4096
+        or type(token) is not str
+        or not 1 <= len(token) <= 16384
+        or credential_account is not None
+        and (type(credential_account) is not str or credential_account != account)
+    ):
+        raise EvidenceError("AWS_SDK_CREDENTIAL_BINDING")
+    return access, secret, token, credential_account
+
+
 class AwsSdkTransport:
     def __init__(
         self,
@@ -418,6 +451,7 @@ class AwsSdkTransport:
             self._credentials = sts_client._request_signer._credentials
         except Exception:
             raise EvidenceError("AWS_SDK_CLIENT_CONFIG") from None
+        self._credential_binding = _credential_components(self._credentials, scope.account)
         self._check()
         sessions: set[int] = set()
         for service, client in self._clients():
@@ -467,6 +501,7 @@ class AwsSdkTransport:
                 or credentials.method != "explicit"
                 or credentials.access_key != lease.access_key_id
                 or not credentials.token
+                or _credential_components(credentials, scope.account) != self._credential_binding
             ):
                 raise EvidenceError("AWS_SDK_CREDENTIAL_BINDING")
             for service, client in self._clients():

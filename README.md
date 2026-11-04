@@ -1,5 +1,19 @@
 # CloudSecOps Live
 
+Phase1B-AWS-3 adds **fixed offline workers and separate identity contracts** for
+metadata inspection, archive collection and fixture consistency verification. Requests
+cannot select executable code or deliver credentials. Explicit temporary-session,
+RoleId/MFA observation and substitution checks remain unverified observations; no live
+AWS client or source-authentication path is enabled. See [worker architecture](docs/architecture/AWS_FIXED_WORKERS.md),
+[permission differences](docs/PHASE1B_AWS3_PERMISSION_DIFFERENCES.md) and the
+[no-AI lab](docs/labs/PHASE1B_AWS3_INTERVIEW_LAB.md).
+
+This milestone starts from protected main `58d008c4744c7f2f7560bddc6fcdc19516ef6298`,
+tree `2d1d8c37a2a9a1094f74b17046ffcdb5e7fcc0cc`, the normal PR#9 merge. All ten
+required CI names and previous acceptance gates remain. The dated owner audit is
+private input, not current effective IAM or demonstrated session issuance. Inspection
+never gains S3 evidence-object access. Wazuh and retained PostgreSQL remain NO-GO.
+
 Phase1B-AWS-2 adds offline **process-isolated runner preparation**: a monotonic parent watchdog, owned-tree cleanup, explicit temporary-identity contracts, aggregate read-only SDK budgets and disabled AWS CLI2.37.11 preflight. It exposes no live command or credential/AWS access. See [runner architecture](docs/architecture/AWS_SECURE_RUNNER.md), [implementation plan](docs/PHASE1B_AWS2_PLAN.md) and [no-AI lab](docs/labs/PHASE1B_AWS2_INTERVIEW_LAB.md). Every prepared receipt remains unauthenticated; live assembly and signed-source authentication require separate gates.
 
 Starting main is PR#8 merge `5e860dffb3e13b82121afa8e7b82e8d43a2ad639`, tree `ec98d22dafb0eb1a1d2a2f72d9e5b95588d98b79`. Its active ruleset requires ten CI checks, PRs and resolved conversations; it currently requires zero approving reviews. Historical OPS1 delivery wording below is superseded by this checkpoint. Retained PostgreSQL and Wazuh remain **NO-GO**; no local database acceptance is authorized.
@@ -16,7 +30,7 @@ a workflow definition is not a passing run.
 
 PR#7 was normally merged at `1400427df348b06f47e1415e8734aa82bf074305`, preserving
 reviewed tree `9fad3b5d56afbc4dfe610e08d26a6b39854267f0`. PR#8 subsequently merged the
-test-harness milestone at the starting checkpoint above. This AWS2 PR remains unmerged.
+test-harness milestone at the historical checkpoint above. AWS2 was subsequently merged through PR#9.
 The historical PostgreSQL SIGSEGV remains unexplained, and local full PostgreSQL suites
 remain **NO-GO**. Wazuh installation and live AWS activity remain unauthorized.
 
@@ -86,6 +100,7 @@ The project does not claim production SOC experience, operational incident autho
 
 | Document | Purpose |
 | --- | --- |
+| [AWS3 offline validation](docs/PHASE1B_AWS3_VALIDATION.md) | Executed local tests, branch gates, review corrections and unverified live boundaries |
 | [Test-harness safety](docs/PHASE1B_OPS1_SAFETY.md) | Disposable-CI capacity, private creation provenance, quarantine and retained-data preservation |
 | [Test-harness governance](docs/TEST_HARNESS_GOVERNANCE.md) | Observed branch-protection gaps and the separately authorized owner protection plan |
 | [Reviewed-workflow operations](docs/REVIEWED_WORKFLOW_OPERATIONS.md) | Distinct review, restricted verifier, real HTTPS success/failure and audited reopen demo |
@@ -137,6 +152,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The AWS2 PR remains unmerged; no cleanup or live exercise follows automatically.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. This AWS3 PR remains unmerged; no cleanup or live exercise follows automatically.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.
