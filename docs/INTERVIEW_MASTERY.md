@@ -1,5 +1,11 @@
 # Interview mastery and practical assessment
 
+Phase1B-AWS-3 adds the [fixed-worker and least-privilege lab](labs/PHASE1B_AWS3_INTERVIEW_LAB.md):
+immutable RoleId/session bindings, explicit MFA observations, fixed dispatch, S3
+metadata versus object authority, credential substitution and static/effective IAM
+differences. All exercises use fictional data with no AWS or retained databases.
+Automated fixture tests establish neither real session issuance nor human mastery.
+
 Phase1B-AWS-2 adds the [secure runner no-AI lab](labs/PHASE1B_AWS2_INTERVIEW_LAB.md): total deadlines versus socket timeouts, native owned-process cleanup, immutable session identity, aggregate budgets, CLI provenance observations and unauthenticated receipts. Demonstrate loopback stalls and cancellation without AWS, retained databases or unrelated process changes.
 
 Phase1B-AWS-1 adds a [guarded SDK and receipt practical lab](labs/PHASE1B_AWS1_INTERVIEW_LAB.md)

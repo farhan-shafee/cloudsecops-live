@@ -227,7 +227,10 @@ def test_runtime_policies_have_no_added_write_or_role_assumption_authority(
         "cloudtrail:ListPublicKeys",
         "sts:GetCallerIdentity",
     }
-    if role == "verifier":
+    if role == "collector":
+        expected_sids.add("InspectTrailInsights")
+        expected.add("cloudtrail:GetInsightSelectors")
+    elif role == "verifier":
         expected_sids |= {
             "InspectExactRuntimeRoles",
             "InspectArchiveConfiguration",

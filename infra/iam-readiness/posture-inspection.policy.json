@@ -1,0 +1,73 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ObserveCallerIdentity",
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RegionalTrailInventory",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:ListTrails"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-east-1"
+        }
+      }
+    },
+    {
+      "Sid": "BucketInventory",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AccountPublicAccessPosture",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetAccountPublicAccessBlock"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "s3:ResourceAccount": "${INSPECTION_ACCOUNT_ID}"
+        }
+      }
+    },
+    {
+      "Sid": "InspectExactRoleMetadata",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:ListRolePolicies",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies"
+      ],
+      "Resource": "arn:aws:iam::${INSPECTION_ACCOUNT_ID}:role/${INSPECTION_ROLE_PATH_AND_NAME}"
+    },
+    {
+      "Sid": "DenyOtherActions",
+      "Effect": "Deny",
+      "NotAction": [
+        "cloudtrail:ListTrails",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "s3:GetAccountPublicAccessBlock",
+        "s3:ListAllMyBuckets",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

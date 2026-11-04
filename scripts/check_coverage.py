@@ -49,6 +49,14 @@ AWS_RUNNER_PLATFORM = (
     "integrations/aws_runner/network",
     "integrations/aws_runner/containment",
 )
+AWS_READINESS = (
+    "integrations/aws_readiness/sessions",
+    "integrations/aws_readiness/permissions",
+    "integrations/aws_readiness/requests",
+    "integrations/aws_readiness/registry",
+    "integrations/aws_readiness/transport",
+    "integrations/aws_readiness/workers",
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -96,6 +104,7 @@ def main() -> int:
     parser.add_argument("--require-aws", action="store_true")
     parser.add_argument("--require-aws1", action="store_true")
     parser.add_argument("--require-aws2", action="store_true")
+    parser.add_argument("--require-aws3", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -149,6 +158,7 @@ def main() -> int:
             (options.require_aws, AWS_OFFLINE),
             (options.require_aws1, AWS_GUARDED),
             (options.require_aws2, AWS_RUNNER),
+            (options.require_aws3, AWS_READINESS),
         ):
             if not enabled:
                 continue

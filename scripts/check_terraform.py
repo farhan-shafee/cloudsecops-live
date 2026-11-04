@@ -183,7 +183,17 @@ def reviewed_configuration() -> dict:
         "collector_trust": _trust("collector"),
         "verifier_trust": _trust("verifier"),
         "test_actor_trust": _trust("test_actor"),
-        "collector_policy": _policy(_reader_statements()),
+        "collector_policy": _policy(
+            _reader_statements()
+            + [
+                _statement(
+                    "InspectTrailInsights",
+                    ["cloudtrail:GetInsightSelectors"],
+                    "${local.trail_arn}",
+                    Condition={"StringEquals": {"aws:RequestedRegion": "us-east-1"}},
+                )
+            ]
+        ),
         "verifier_policy": _policy(
             _reader_statements()
             + [

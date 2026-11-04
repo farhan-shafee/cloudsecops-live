@@ -270,6 +270,19 @@
             "sts:GetCallerIdentity"
           ],
           "Resource": "*"
+        },
+        {
+          "Sid": "InspectTrailInsights",
+          "Effect": "Allow",
+          "Action": [
+            "cloudtrail:GetInsightSelectors"
+          ],
+          "Resource": "${local.trail_arn}",
+          "Condition": {
+            "StringEquals": {
+              "aws:RequestedRegion": "us-east-1"
+            }
+          }
         }
       ]
     },

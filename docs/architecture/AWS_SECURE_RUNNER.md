@@ -4,7 +4,7 @@ Phase 1B-AWS-2 prepares lifecycle, identity and resource boundaries. It supplies
 
 ## Process and deadline boundary
 
-`aws_runner.process.run_isolated` is an internal Python library mechanism. `WorkerRef` is trusted local code control supplied independently of bounded JSON request data. It is never taken from a browser, fixture field, AWS response or CLI argument. No generic shell or user-selected AWS operation is exposed. Future authorized assembly must use a reviewed fixed worker registry; this milestone does not activate one for AWS access.
+`aws_runner.process.run_isolated` is an internal Python library mechanism. `WorkerRef` is trusted local code control supplied independently of bounded JSON request data. It is never taken from a browser, fixture field, AWS response or CLI argument. No generic shell or user-selected AWS operation is exposed. Phase1B-AWS-3 adds a [fixed offline registry](AWS_FIXED_WORKERS.md) whose three named facades select only literal project workers. They accept fictional data tapes, not clients/credentials, and do not activate AWS access. A future network-enabled assembly still needs separate review and authorization.
 
 The parent starts an independent supervisor thread that never runs worker code or SDK I/O. A Python child starts with `-I -S`, no inherited credential/proxy/profile environment, and only standard-library bootstrap code before a private gate. Containment is established before releasing the gate. Worker imports and operation execution happen afterwards. A separate reader caps length-framed JSON IPC; ordinary stdout/stderr are discarded, raw exceptions are never returned, and JSON duplicates/nonfinite values/unsupported structure fail closed.
 

@@ -1,5 +1,31 @@
 # Threat model
 
+## Fixed-worker readiness boundary: Phase1B-AWS-3
+
+The [AWS3 design](AWS_FIXED_WORKERS.md) treats all request/tape metadata as untrusted
+observations. Three literal worker facades prevent request-selected imports, commands,
+clients or endpoints. Exact immutable role/session bindings, distinct purpose peers,
+static credential snapshots and before/after checks reject substitutions. Fictional
+tapes enforce fixed call order, parameters, pagination, error handling and aggregate
+budgets under the independent AWS2 process watchdog. No credential provider is called.
+
+Inspection is metadata-only; it cannot perform S3 HeadObject/GetObject or widen the
+existing audit role. Unknown policies, attachments or boundaries require owner review.
+Returned policy JSON, MFA observations and role names do not establish effective IAM.
+An innocently named role could have administrator authority; only future independently
+observed authorization can settle that. Caller-supplied expected/STS/provenance data
+can be internally consistent and still forged. All results remain unauthenticated and
+cannot authorize findings or closure. The fixed offline verifier compares fixture
+content only and acquires no synthetic-verifier database authority.
+
+Original account-specific observations/receipts stay private. The public permission
+diff covers exact repository source, not unavailable live inline-policy bytes. The
+unchanged role-principal trust templates lack MFA conditions; this remains a live
+issuance gate. Static policy/provider validation does not prove role assumption or
+CloudTrail delivery. No AWS, credential, retained-database or Wazuh operation is part
+of this milestone. Existing OS/process-group, native dependency, host administrator,
+PostgreSQL incident and intermittent ACL-probe limitations remain.
+
 ## Phase1B-AWS-2 execution preparation
 
 The [runner](AWS_SECURE_RUNNER.md) separates hostile network stalls from the parent watchdog, gates imports until native containment, bounds JSON IPC and discards raw diagnostics. Work and forced owned-tree cleanup share one monotonic deadline. Unknown cleanup, late launch, cancellation and exhausted budgets cannot yield successful evidence. Role unique-ID/session/expiry/provenance and fixed read-only operation/source allowlists supplement existing credential/TLS guards. Aggregate budgets count failed calls and retries; response-body byte limits do not count TLS/header framing.

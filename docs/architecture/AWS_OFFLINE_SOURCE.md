@@ -1,5 +1,11 @@
 # AWS offline source boundary
 
+Phase1B-AWS-3 adds [fixed offline workers](AWS_FIXED_WORKERS.md) above these unchanged
+source contracts. Their inspection scope is independent of trail/archive existence;
+collector and verifier use separate exact identities and the existing `AwsScope`.
+Fictional responses, temporary-session metadata and content consistency never grant
+source authenticity. No bridge to synthetic findings, SQL intake or closure is added.
+
 Acquisition metadata is a future implementation contract, not an invented AWS response schema. STS GetCallerIdentity does not return region or expiry; those must be bound to the configured client and credential provider. S3 GetObject does not return an authoritative owner-account field: the future transport must send ExpectedBucketOwner, retain evidence of that successful request guard, and reconcile actual returned VersionId, size and modification metadata. Current ObjectBody.owner_account is only a controlled transport observation. These fields cannot independently authenticate a source. [S3 GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
 
 Status: Phase1B-AWS-1 offline preparation, 2026-11-03. This pure package has no

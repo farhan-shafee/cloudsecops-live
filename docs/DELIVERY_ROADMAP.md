@@ -1,5 +1,22 @@
 # Delivery roadmap
 
+## Phase1B-AWS-3: fixed workers and least-privilege identity readiness
+
+PR#9 was normally merged as `58d008c4744c7f2f7560bddc6fcdc19516ef6298`, preserving
+tree `2d1d8c37a2a9a1094f74b17046ffcdb5e7fcc0cc`. AWS3 adds named fixture-only workers,
+strict temporary-session assembly, separate metadata/collector/verifier capabilities
+and a [reviewed Terraform permission difference](PHASE1B_AWS3_PERMISSION_DIFFERENCES.md).
+The existing audit role is not widened. All ten check names, individual branch gates,
+native Terraform, sequential disposable PostgreSQL and privacy checks remain required.
+
+The [fixed-worker design](architecture/AWS_FIXED_WORKERS.md) and
+[practical lab](labs/PHASE1B_AWS3_INTERVIEW_LAB.md) explain the boundaries. Future live
+work still requires explicit authorization, real non-root temporary issuance/MFA,
+effective IAM and reviewed network-enabled assembly. No source authentication, live
+collection, provisioning, cleanup, Wazuh or retained-database acceptance is enabled.
+The dated empty trail/bucket inventory is not a current existence check. This feature
+PR stays unmerged until separately authorized; human mastery remains NOT_RUN.
+
 ## Phase1B-AWS-2: offline secure runner preparation
 
 PR#8 is merged as `5e860dffb3e13b82121afa8e7b82e8d43a2ad639`, preserving tree `ec98d22dafb0eb1a1d2a2f72d9e5b95588d98b79`. Main now has an active ten-check ruleset; independent approving review is not enforced. Historical OPS1 publication/governance status below is superseded by this checkpoint.
