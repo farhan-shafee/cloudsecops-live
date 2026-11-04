@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "infra/aws-offline"
 AWS_VERSION = "6.71.0"
+TERRAFORM_VERSION = "1.17.1"
 INPUTS = (
     "account_id",
     "archive_bucket_name",
@@ -116,6 +117,23 @@ def reviewed_configuration() -> dict:
             "error_message": "Use a private globally unique lowercase bucket name without dots.",
         }
     ]
+    variables["archive_bucket_name"]["validation"].append(
+        {
+            "condition": "${"
+            + " && ".join(
+                [
+                    f'!startswith(var.archive_bucket_name, "{prefix}")'
+                    for prefix in ("xn--", "sthree-", "amzn-s3-demo-")
+                ]
+                + [
+                    f'!endswith(var.archive_bucket_name, "{suffix}")'
+                    for suffix in ("-s3alias", "--ol-s3", ".mrap", "--x-s3", "--table-s3", "-an")
+                ]
+            )
+            + "}",
+            "error_message": "Use an ordinary bucket name outside AWS reserved namespaces.",
+        }
+    )
     role_inputs = INPUTS[2:]
     for name in role_inputs:
         variables[name]["validation"] = [
@@ -248,7 +266,12 @@ def reviewed_configuration() -> dict:
                     "Principal": "*",
                     "Action": ["s3:*"],
                     "Resource": ["${local.bucket_arn}", "${local.bucket_arn}/*"],
-                    "Condition": {"Bool": {"aws:SecureTransport": "false"}},
+                    "Condition": {
+                        "Bool": {
+                            "aws:SecureTransport": "false",
+                            "aws:PrincipalIsAWSService": "false",
+                        }
+                    },
                 },
                 {
                     "Sid": "OnlyCloudTrailMayWrite",
@@ -386,7 +409,7 @@ def reviewed_configuration() -> dict:
         }
     return {
         "terraform": {
-            "required_version": ">= 1.9.0, < 2.0.0",
+            "required_version": "= " + TERRAFORM_VERSION,
             "required_providers": {
                 "aws": {"source": "hashicorp/aws", "version": "= " + AWS_VERSION}
             },
@@ -487,7 +510,7 @@ def main(argv: list[str] | None = None) -> int:
     if findings:
         return 1
     print("Terraform source policy passed (local structural allowlist only).")
-    print("Terraform validate was not run; provider schema and live behavior remain unverified.")
+    print("Terraform validate was not run by this structural check; the native gate is separate.")
     return 0
 
 

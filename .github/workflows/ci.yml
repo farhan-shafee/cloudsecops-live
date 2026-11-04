@@ -95,6 +95,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         python: ["3.12", "3.14"]
     services:
@@ -148,6 +149,59 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+
+  native-terraform:
+    name: Native Terraform and provider security
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+          check-latest: false
+      - name: Independent structural source policy
+        run: python scripts/check_terraform.py
+      - name: Verified native toolchain and configuration gate
+        # Bootstrap emits a proposed official lock, but deliberately fails
+        # acceptance until that lock is reviewed and committed.
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          python -m scripts.terraform_native \
+            --source-revision "${{ github.sha }}" \
+            --work-parent "${{ runner.temp }}" \
+            --receipt .tools/ci-receipts/terraform-native.json \
+            --bootstrap-lock
+      - name: Expose only the public proposed lock for review
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          path = Path('.tools/ci-receipts/.terraform.lock.hcl')
+          if path.is_file():
+              data = path.read_bytes()
+              assert len(data) <= 16384
+              print('BEGIN_PROVIDER_LOCK_BASE64')
+              print(base64.b64encode(data).decode('ascii'))
+              print('END_PROVIDER_LOCK_BASE64')
+          PY
+      - name: Retain sanitized native verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: terraform-native-${{ github.sha }}
+          path: |
+            .tools/ci-receipts/terraform-native.json
+            .tools/ci-receipts/.terraform.lock.hcl
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
 
   dependency-audit:
     strategy:

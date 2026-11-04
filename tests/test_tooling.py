@@ -43,7 +43,12 @@ def test_scanner_io_warning_is_failure_not_a_clean_scan(tmp_path: Path, capsys: 
 
 def test_workflow_can_be_loaded_as_yaml_with_executable_string_steps() -> None:
     document = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
-    assert set(document["jobs"]) == {"validate", "dependency-audit", "postgres-integration"}
+    assert set(document["jobs"]) == {
+        "validate",
+        "dependency-audit",
+        "postgres-integration",
+        "native-terraform",
+    }
     # GitHub's job context is available to step env, not jobs.<job_id>.env.
     postgres = document["jobs"]["postgres-integration"]
     assert "job.services" not in json.dumps(postgres.get("env", {}))
@@ -58,12 +63,21 @@ def test_workflow_can_be_loaded_as_yaml_with_executable_string_steps() -> None:
     database = document["jobs"]["postgres-integration"]
     assert database["runs-on"] == "ubuntu-24.04"
     assert database["strategy"]["matrix"]["python"] == ["3.12", "3.14"]
+    assert database["strategy"]["max-parallel"] == 1
     assert "@sha256:" in database["services"]["postgres"]["image"]
     assert database["services"]["postgres"]["ports"] == ["127.0.0.1:5432:5432"]
     runs = "\n".join(step.get("run", "") for step in database["steps"])
     assert "scripts/run_integration.py" in runs
     assert "--require-durable" in runs
     assert "continue-on-error" not in json.dumps(database)
+    native = document["jobs"]["native-terraform"]
+    assert native["runs-on"] == "ubuntu-24.04"
+    assert native["defaults"]["run"]["shell"] == "bash"
+    assert "continue-on-error" not in json.dumps(native)
+    commands = "\n".join(step.get("run", "") for step in native["steps"])
+    assert "python -m scripts.terraform_native" in commands
+    assert "git rev-parse HEAD" in commands
+    assert document["permissions"] == {"contents": "read"}
 
 
 def test_compressed_fixture_secrets_and_accounts_cannot_bypass_scan(tmp_path: Path) -> None:

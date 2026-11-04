@@ -1,6 +1,6 @@
 {
   "terraform": {
-    "required_version": ">= 1.9.0, < 2.0.0",
+    "required_version": "= 1.17.1",
     "required_providers": {
       "aws": {
         "source": "hashicorp/aws",
@@ -51,6 +51,10 @@
         {
           "condition": "${can(regex(\"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$\", var.archive_bucket_name))}",
           "error_message": "Use a private globally unique lowercase bucket name without dots."
+        },
+        {
+          "condition": "${!startswith(var.archive_bucket_name, \"xn--\") && !startswith(var.archive_bucket_name, \"sthree-\") && !startswith(var.archive_bucket_name, \"amzn-s3-demo-\") && !endswith(var.archive_bucket_name, \"-s3alias\") && !endswith(var.archive_bucket_name, \"--ol-s3\") && !endswith(var.archive_bucket_name, \".mrap\") && !endswith(var.archive_bucket_name, \"--x-s3\") && !endswith(var.archive_bucket_name, \"--table-s3\") && !endswith(var.archive_bucket_name, \"-an\")}",
+          "error_message": "Use an ordinary bucket name outside AWS reserved namespaces."
         }
       ]
     },
@@ -488,7 +492,8 @@
           ],
           "Condition": {
             "Bool": {
-              "aws:SecureTransport": "false"
+              "aws:SecureTransport": "false",
+              "aws:PrincipalIsAWSService": "false"
             }
           }
         },
