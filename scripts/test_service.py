@@ -56,7 +56,7 @@ def _disk_row(lines: list[str]) -> int:
     if any(not re.fullmatch(r"[0-9]{1,20}", part) for part in fields[1:4]):
         raise ValueError
     total, used, free = map(int, fields[1:4])
-    if total <= 0 or used > total or free > total:
+    if total <= 0 or used > total or free > total or used + free > total:
         raise ValueError
     if not re.fullmatch(r"(?:100|[0-9]{1,2})%", fields[4]):
         raise ValueError

@@ -136,6 +136,14 @@ def test_display_alias_never_allows_a_replaced_volume(monkeypatch, tmp_path):
             framed_probe(data=DATA_ROW.replace("9437184", "unknown")), id="nonnumeric-data"
         ),
         pytest.param(framed_probe(shm=SHM_ROW.replace("57344", "unknown")), id="nonnumeric-shm"),
+        pytest.param(
+            framed_probe(data="disk 10485760 9437184 9437184 90% /etc/hosts\n"),
+            id="inconsistent-data-block-counts",
+        ),
+        pytest.param(
+            framed_probe(shm="shm 65536 57344 57344 88% /dev/shm\n"),
+            id="inconsistent-shm-block-counts",
+        ),
         pytest.param(framed_probe(data="unsupported disk format\n"), id="unsupported-data-row"),
         pytest.param(framed_probe(shm="unsupported disk format\n"), id="unsupported-shm-row"),
         pytest.param(
