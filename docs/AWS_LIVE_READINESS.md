@@ -1,5 +1,12 @@
 # AWS live readiness: owner decision packet
 
+Phase1B-AWS-4A prepares a [guarded posture engine](architecture/AWS_POSTURE_NETWORK.md)
+behind an unconditional disabled production worker. It has no activation path, actual
+credential broker or owner-approval constructor. Pending decision references and the
+one-use in-process fictional-session capability establish no real custody or execution
+authority. The historical private CLI session ended; its receipts do not authorize
+reuse, another session or a current effective-permission claim.
+
 Phase1B-AWS-3 supplies [fixed fixture-only workers](architecture/AWS_FIXED_WORKERS.md)
 and explicit role/session/MFA consistency contracts. It does not supply credential
 delivery, actual temporary issuance or network-enabled live assembly. The owner's
@@ -36,6 +43,35 @@ references. Do not paste credentials into a document, command argument or chat.
 
 All four are currently **UNAPPROVED**. PR review or offline test success cannot imply any
 of them. No real identifiers or resolved resource names are required in this public file.
+
+## AWS4A account-level inspection decision and remaining gates
+
+The [Issue11 owner clarification](https://github.com/farhan-shafee/cloudsecops-live/issues/11#issuecomment-6670869085)
+authorizes the offline design to retain S3 Control
+`GetPublicAccessBlock(AccountId=approved_account)`, IAM action
+`s3:GetAccountPublicAccessBlock` and the exact-account `s3:ResourceAccount` condition.
+The account-level policy statement retains `Resource: "*"`; the exact condition is
+not a wildcard account grant. No bucket permission, bucket fallback or IAM change is
+part of AWS4A. The conflicting AWS Service Authorization Reference operation mapping
+remains unresolved for live preflight. A denial must stop the workflow, never trigger
+`s3:GetBucketPublicAccessBlock`, another principal or broader permissions.
+
+The fixed engine permits eight operation types. With one inline policy and no extra
+pages/retries it requires thirteen calls, including final policy, immutable RoleId and
+STS identity rereads. Empty trail/bucket lists are valid observations only after a
+complete successful bounded response. The owner condition requires all four
+account-level Block Public Access values to be exactly boolean `true`; missing,
+unknown, false or ambiguous results reject. These checks neither compute effective
+IAM nor produce an atomic authorization snapshot.
+
+Before any future activation, independently approve current identity and MFA issuance,
+short-lived non-refreshable credential custody and a real OS delivery broker; verify
+the exact effective IAM/permission mapping; approve OS egress/process containment and
+TLS/CA policy; and bind reviewed source, UTC window and finite budgets. Python guards
+and fake-client tests do not satisfy those gates. Network stalls still require the
+independent parent watchdog through owned-process cleanup. No AWS4A prepared receipt
+is source authentication. AWS4B signed-log work, live collection and any bridge to
+findings/recommendations/closure require separate implementation and authorization.
 
 ## Required private decisions and evidence
 

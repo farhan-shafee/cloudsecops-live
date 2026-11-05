@@ -68,7 +68,7 @@ jobs:
         # native subprocess acceptance is separate from in-process percentages.
         run: python -m pytest --cov=cloudsecops_live --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Foundation line and actual ingestion/detection branch gates
-        run: python scripts/check_coverage.py --require-aws --require-aws1 --require-aws2 --require-aws3
+        run: python scripts/check_coverage.py --require-aws --require-aws1 --require-aws2 --require-aws3 --require-aws4
       - name: Secret and private identifier scan (no remote credential verification)
         run: python scripts/check_secrets.py
       - name: Build with locked backend
@@ -149,7 +149,7 @@ jobs:
           CSL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: python scripts/run_integration.py --receipt .tools/ci-receipts/postgres-py${{ matrix.python }}.json -- --cov=cloudsecops_live --cov-append --cov-branch --cov-fail-under=0 --cov-report=term-missing --cov-report=json --cov-report=xml
       - name: Preserve foundation gates and require actual security branches
-        run: python scripts/check_coverage.py --require-durable --require-security --require-aws --require-aws1 --require-aws2 --require-aws3
+        run: python scripts/check_coverage.py --require-durable --require-security --require-aws --require-aws1 --require-aws2 --require-aws3 --require-aws4
       - name: Retain sanitized database test and coverage evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

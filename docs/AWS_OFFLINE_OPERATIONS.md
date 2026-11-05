@@ -1,5 +1,45 @@
 # Offline AWS foundation operations
 
+## Disabled posture network preparation: Phase1B-AWS-4A
+
+The [AWS4A architecture](architecture/AWS_POSTURE_NETWORK.md) documents a separate
+literal worker/bootstrap and internal fixed SDK engine. The public
+`run_posture_network` facade accepts only a decision reference and nonce; it always
+fails with `AWS4A_EXECUTION_DISABLED`. It does not load a private owner record,
+redeem credentials or construct clients. No flag, environment variable or complete
+metadata object can enable it. Do not turn the internal fake-client examples into a
+live command. A real OS credential broker and live containment remain unimplemented.
+
+After the hash-locked Python setup, run only the credential-free tests:
+
+```powershell
+.venv\Scripts\python.exe -m pytest tests/test_aws4a_contracts.py tests/test_aws4a_budget.py tests/test_aws4a_engine.py tests/test_aws4a_clients.py tests/test_aws4a_wire.py tests/test_aws4a_network.py tests/test_aws4a_process.py tests/test_aws4a_bootstrap.py tests/test_aws4a_boundaries.py -q
+.venv\Scripts\python.exe scripts/check_aws3_permissions.py
+.venv\Scripts\python.exe scripts/check_terraform.py
+```
+
+Expected behavior is disabled production dispatch, minimized unauthenticated fake
+observations and rejection of forged scope, policy drift, permission errors, malformed
+pagination, wire substitution and exhausted budgets. The suite uses fictional static
+temporary material and controlled numeric-loopback servers; it needs no real AWS
+credentials or requests. Test output and coverage must be evaluated at the actual
+reviewed head, independently from workflow definitions.
+
+The [owner permission decision](https://github.com/farhan-shafee/cloudsecops-live/issues/11#issuecomment-6670869085)
+keeps the account S3 Control API, `s3:GetAccountPublicAccessBlock` and exact
+`s3:ResourceAccount` binding. Do not substitute the bucket API/action, adjust IAM or
+interpret denial as empty success. The contradictory AWS SAR mapping remains a
+future live-preflight limitation. Valid empty inventory counts do not authorize
+creating trails or buckets; all four account BPA values must be exactly `true`.
+
+The prior private CLI session ended and cannot be reused. No private receipt,
+identifier, inline-policy document, credential, raw exception or SDK debug output
+belongs in Git/public artifacts. The capability test is in-process only and proves
+neither OS custody nor actual issuance. No AWS4B signed-source work or source-trust
+promotion occurs here. Retained-local PostgreSQL and Wazuh stay NO-GO. Preserve the
+original ACL-probe timeout and successful retry separately, and keep the historical
+PostgreSQL SIGSEGV root cause explicitly unproven.
+
 ## Fixed workers: Phase1B-AWS-3
 
 After the normal hash-locked Python setup, these commands use only fictional data:

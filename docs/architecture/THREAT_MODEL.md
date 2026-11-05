@@ -1,5 +1,39 @@
 # Threat model
 
+## Disabled posture network boundary: Phase1B-AWS-4A
+
+The [posture design](AWS_POSTURE_NETWORK.md) treats request and owner-reference
+metadata as untrusted pending observations. The fixed production child always rejects
+before owner-record lookup, credential redemption or SDK construction. There is no
+activator or actual OS credential broker. One-use PID/nonce/full-decision-bound
+fictional capabilities exercise software races only; they do not prove real custody.
+The ended private CLI session is historical evidence, not a reusable execution session.
+
+Internal fake-client tests address ambient provider/configuration discovery, credential
+substitution, role recreation, policy drift, hidden pagination, denied-as-empty
+responses, raw-field loss, XML attacks and late SDK parameter substitution. Fixed
+packaged models/CA and HTTPS endpoints, no proxies/internal retries, exact reserved
+parameters revalidated from final HTTP bytes, and preparse status/header/chunk/body
+limits supplement aggregate non-refundable budgets. Complete empty inventory is valid;
+an AWS error is not. All four account BPA values must be exactly boolean true. Final
+policy/RoleId/STS rereads detect observed changes, not atomic or effective IAM state.
+
+The [owner clarification](https://github.com/farhan-shafee/cloudsecops-live/issues/11#issuecomment-6670869085)
+keeps account S3 Control, `s3:GetAccountPublicAccessBlock` and exact
+`s3:ResourceAccount`; bucket APIs/actions and fallback IAM widening remain forbidden.
+The contradictory upstream SAR mapping is an unresolved live gate. Any denial,
+unknown/false BPA field, expired session, budget/deadline failure or uncertain cleanup
+invalidates the result. No observation grants AWS authenticity, trusted findings,
+recommendation approval or closure. AWS4B is separate future work.
+
+The independent parent watchdog bounds blocked network phases and owned-tree cleanup.
+Python egress/process guards cannot contain arbitrary native/same-user code and are
+not OS firewall policy. Actual issuance/MFA, a private OS broker, effective IAM, current
+owner scope, reviewed OS egress/containment and TLS policy remain mandatory live gates.
+Retained PostgreSQL stays blocked; the historical SIGSEGV and original Windows ACL
+timeout/successful retry remain unexplained. Wazuh's physical-memory gate remains
+NO-GO. None is repaired by offline SDK or loopback fault tests.
+
 ## Fixed-worker readiness boundary: Phase1B-AWS-3
 
 The [AWS3 design](AWS_FIXED_WORKERS.md) treats all request/tape metadata as untrusted
