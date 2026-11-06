@@ -8,9 +8,9 @@ import pytest
 from botocore.exceptions import ConnectTimeoutError
 
 from cloudsecops_live.errors import EvidenceError
+from cloudsecops_live.integrations.aws_posture.signing import FrozenHeaders, FrozenRequest
 from cloudsecops_live.integrations.aws_posture.wire import (
     BoundedReader,
-    GuardedSession,
     endpoint_for,
     install_response_bounds,
     validate_request,
@@ -206,38 +206,97 @@ def test_account_operation_rejects_host_bucket_proxy_body_substitutions(changes)
         validate_request("s3control", ACCOUNT, request(**changes))
 
 
-def test_session_reserves_actual_body_before_send_and_checks_after():
-    budget = Budget()
+def signed_fixed_guard(monkeypatch):
+    import socket
+
+    import boto3
+    import botocore.auth
+    import botocore.session
+    from botocore.auth import SigV4Auth
+    from botocore.awsrequest import AWSRequest
+
+    from tests.aws4a_helpers import NOW
+    from tests.test_aws4a_clients import setup_clients
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("fixed signing fixture must not access network or providers")
+
+    monkeypatch.setattr(socket, "create_connection", forbidden)
+    monkeypatch.setattr(socket.socket, "connect", forbidden)
+    monkeypatch.setattr(socket, "getaddrinfo", forbidden)
+    monkeypatch.setattr(botocore.session, "get_session", forbidden)
+    monkeypatch.setattr(botocore.session.Session, "get_credentials", forbidden)
+    monkeypatch.setattr(boto3, "Session", forbidden)
+    monkeypatch.setattr(botocore.auth, "get_current_datetime", lambda **kwargs: NOW)
+    owner, bound, budget, clients = setup_clients()
+    params = {"AccountId": owner.expected.account}
+    budget.before_call("s3control", "GetPublicAccessBlock", params)
+    budget.authorize_parameters("s3control", "GetPublicAccessBlock", params)
+    prepared = AWSRequest(
+        method="GET",
+        url=endpoint_for("s3control", owner.expected.account)
+        + "/v20180820/configuration/publicAccessBlock",
+        headers={"x-amz-account-id": owner.expected.account},
+    )
+    # The real pinned S3 Control model signs this account API as service s3.
+    SigV4Auth(bound.credentials, "s3", "us-east-1").add_auth(prepared)
+    return budget, clients, clients.s3control._endpoint.http_session, prepared.prepare()
+
+
+def test_session_reserves_actual_body_before_send_and_checks_after(monkeypatch):
+    from tests.test_aws4a_clients import close_clients
+
+    budget, clients, wrapped, prepared = signed_fixed_guard(monkeypatch)
     response = SimpleNamespace(status_code=403)
-    transport = SimpleNamespace(send=lambda value: response, close=lambda: None)
-    wrapped = GuardedSession("s3control", ACCOUNT, transport, budget)
-    assert wrapped.send(request()) is response
-    assert budget.sent == 1 and budget.request_bytes == 0
-    wrapped.close()
+    sends = []
+    before = budget.public_dict()["request_bytes"]
+    wrapped._transport.send = lambda value: sends.append(True) or response
+    try:
+        assert wrapped.send(prepared) is response
+        # This GET has no body; its logical AccountId reservation is retained,
+        # with exactly zero additional body bytes and a single final dispatch.
+        assert sends == [True] and budget.public_dict()["request_bytes"] == before
+        assert budget.public_dict()["calls"] == 1
+    finally:
+        close_clients(clients)
 
 
-def test_transport_failure_is_sticky_and_diagnostics_do_not_include_payload():
-    budget = Budget()
+def test_transport_failure_is_sticky_and_diagnostics_do_not_include_payload(monkeypatch):
+    from tests.test_aws4a_clients import close_clients
+
+    budget, clients, wrapped, prepared = signed_fixed_guard(monkeypatch)
 
     def fail(value):
         raise RuntimeError("fictional-secret-canary")
 
-    wrapped = GuardedSession("s3control", ACCOUNT, SimpleNamespace(send=fail), budget)
-    with pytest.raises(EvidenceError) as error:
-        wrapped.send(request())
-    assert budget.failed and "fictional-secret-canary" not in str(error.value)
+    wrapped._transport.send = fail
+    try:
+        with pytest.raises(EvidenceError) as error:
+            wrapped.send(prepared)
+        assert budget.public_dict()["state"] == "rejected"
+        assert "fictional-secret-canary" not in str(error.value)
+    finally:
+        close_clients(clients)
 
 
-def test_transient_transport_timeout_is_charged_for_explicit_engine_retry():
-    budget = Budget()
+def test_transient_transport_timeout_is_charged_for_explicit_engine_retry(monkeypatch):
+    from tests.test_aws4a_clients import close_clients
+
+    budget, clients, wrapped, prepared = signed_fixed_guard(monkeypatch)
+    sends = []
 
     def fail(value):
+        sends.append(True)
         raise ConnectTimeoutError(endpoint_url="fixed-controlled-endpoint")
 
-    wrapped = GuardedSession("s3control", ACCOUNT, SimpleNamespace(send=fail), budget)
-    with pytest.raises(ConnectTimeoutError):
-        wrapped.send(request())
-    assert budget.sent == 1 and not budget.failed
+    wrapped._transport.send = fail
+    try:
+        with pytest.raises(ConnectTimeoutError):
+            wrapped.send(prepared)
+        assert sends == [True] and budget.public_dict()["calls"] == 1
+        assert budget.public_dict()["state"] == "offline_budget_observation"
+    finally:
+        close_clients(clients)
 
 
 @pytest.mark.parametrize(
@@ -454,7 +513,7 @@ def test_numeric_loopback_tls_uses_installed_bounded_response(tmp_path, monkeypa
     adapter = _HTTPSAdapter(certificate, budget)
     try:
         response = adapter.send(
-            SimpleNamespace(url=f"https://127.0.0.1:{port}/", method="GET", body=None, headers={})
+            FrozenRequest("GET", f"https://127.0.0.1:{port}/", None, FrozenHeaders({}))
         )
         assert response.content == b"hello"
         assert budget.response_bytes == len(plaintext)

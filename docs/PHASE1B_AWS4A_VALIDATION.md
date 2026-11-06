@@ -7,6 +7,13 @@ Starting protected main: `1d9e978946760325a4005f5306a15ac102430a8f`, tree
 The private owner-facts, linked ended CLI-session receipt and retained permission
 blocker were read before implementation. Their contents remain private.
 
+The original publication at `e9c512e45e51126c42e33bd77ad7cdc7d413f22a` was stopped
+after fresh Codex review found a signing-session substitution missed by the local
+review below. Its historical CI later completed10/10 PR and10/10 push jobs, attempt1;
+those unfixed-source runs do not accept the correction. The original private stop
+receipt remains preserved. The owner separately authorized a narrow offline correction
+on the same branch and PR12; see the remediation section at the end of this record.
+
 ## Observed local validation
 
 - Windows/Python3.14.8 full unit/adversarial suite: **2,904 passed**, zero failures
@@ -135,3 +142,64 @@ definitions, a prior review, a structural Terraform pass and local test collecti
 not establish those results. The review PR remains open and unmerged. Live AWS, real
 custody/egress/OS containment, effective IAM and AWS4B source authentication remain
 separate owner-authorized gates.
+
+## Authorized signing-session P2 remediation
+
+The original exploit used a late SDK `before-send` handler to replace Authorization
+and X-Amz-Security-Token with a different fictional SigV4 identity while retaining
+valid reserved API parameters and the original credential object. Both root and an
+independent reviewer reproduced dispatch through the fake transport. No AWS request
+or real credential was used.
+
+Five actual pinned-SDK regressions, one per service, were observed failing before
+source changes. The expanded unfixed baseline failed56 of72 tests; pre-existing
+denials and valid controls passed. Tests preserve the original exact SignedHeaders
+membership when re-signing, so wrong-secret cases cannot pass by rejecting an
+unrelated extra header. Assertions require zero fake dispatches, sticky rejection,
+sanitized diagnostics and all authentication/findings/closure flags false.
+
+The final-boundary guard now verifies exact canonical authorization, key/token and
+service/region/date scope, complete signed-header membership and a recalculated HMAC
+over the frozen final request using the original static BoundSession snapshot. It
+rejects altered identity, token, secret, headers, payload hash, session metadata,
+signer objects and request bytes. The pinned S3 Control signing service is `s3`, not
+its API client name. No SDK signer callback or credential provider is invoked by
+verification. Production remains unconditionally disabled.
+
+Positive controls retain the thirteen-call empty-inventory inspection, explicit
+bounded retries and numeric-loopback TLS through the actual bounded HTTP adapter.
+Fractional-second signing controls caught and corrected an observation-time issue
+introduced by whole-second timestamps; precise current lease/decision validity and
+the independent monotonic deadline remain unchanged. Faults advancing time during
+HMAC computation demonstrated dispatch before the final check; the guard now checks
+the budget/session again immediately before transport.
+
+Correction acceptance requires fresh full local validation, ten PR and ten push
+jobs, independent adversarial review and final-head Codex review. Review-thread
+resolution is permitted only after the former exploit is independently rejected on
+the final reviewed commit. Exact outcomes belong to the PR and ignored private
+remediation receipt. No historical receipt or prior review is rewritten as approval.
+
+Observed corrected-source local acceptance (Windows/Python3.14.8):
+
+- Full unit/adversarial suite: **3,001 passed**, zero skips/failures,248.48seconds.
+  This includes92 new signing tests; no database acceptance was run locally.
+- Formatting/lint and strict mypy passed (69 source files). Secret/identifier scan
+  passed279 files; dependency audit found no known vulnerabilities. Sdist/wheel build
+  passed and includes the new signing module. Structural Terraform/IAM checks passed.
+- Signing18/18 branches, budget46/46 and clients38/38:100%; wire166/176:94.32%.
+  The new module is included in the existing85% gate. No old gate, timeout, resource
+  limit or source exclusion was changed. All-package local coverage retains unexecuted
+  database paths (83.69% lines,78.77% branches); required hosted database coverage
+  remains a separate gate.
+- Independent final adversarial review ran454 focused tests and fifteen separate
+  exact-shape alternate identity/token/secret reproductions across all five services.
+  All fifteen rejected before transport with sticky invalidation; no material finding
+  remained. The reviewed source fingerprint matches the working source.
+
+Ordinary pickle export of the private verifier/credential state now fails with a
+fixed non-sensitive error. This is not secret-memory isolation or an OS credential
+broker. No signing material is included in public results, logs or coverage receipts.
+Fresh corrected-head hosted CI and Codex outcomes are recorded separately after push;
+historical unfixed CI is not reused. The P2 thread stays unresolved until those gates
+and final-commit exploit rejection are verified. PR12 remains open and unmerged.

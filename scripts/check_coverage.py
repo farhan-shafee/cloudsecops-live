@@ -66,6 +66,7 @@ AWS_POSTURE = tuple(
         "budget",
         "engine",
         "clients",
+        "signing",
         "wire",
         "registry",
         "bootstrap",

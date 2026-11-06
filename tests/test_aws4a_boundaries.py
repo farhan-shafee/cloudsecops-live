@@ -19,6 +19,7 @@ MODULES = (
     "budget",
     "engine",
     "clients",
+    "signing",
     "wire",
     "registry",
     "bootstrap",

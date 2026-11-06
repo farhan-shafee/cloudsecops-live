@@ -22,6 +22,11 @@ from botocore.exceptions import (  # type: ignore[import-untyped]
 )
 
 from cloudsecops_live.errors import EvidenceError
+from cloudsecops_live.integrations.aws_posture.signing import (
+    FinalSigningBinding,
+    FrozenHeaders,
+    FrozenRequest,
+)
 
 MAX_LINE_BYTES = 8192
 MAX_HEADER_LINES = 64
@@ -527,18 +532,44 @@ def _validate_success(response: Any, service: str, operation: str, budget: WireB
 
 
 class GuardedSession:
-    def __init__(self, service: str, account: str, transport: Any, budget: WireBudget) -> None:
+    def __init__(
+        self,
+        service: str,
+        account: str,
+        transport: Any,
+        budget: WireBudget,
+        signing: FinalSigningBinding,
+    ) -> None:
+        if type(signing) is not FinalSigningBinding:
+            raise EvidenceError("AWS4A_SIGNING_BINDING")
         self._service, self._account = service, account
         self._transport, self._budget = transport, budget
+        self._signing = signing
 
     def send(self, request: Any) -> Any:
         try:
             self._budget.check()
-            body, operation, params = _request_parameters(self._service, self._account, request)
+            # Read the mutable SDK request exactly once. Validate and dispatch only
+            # this private immutable copy, never the retained SDK/event object.
+            method, url, raw_body, raw_headers = (
+                request.method,
+                request.url,
+                request.body,
+                request.headers,
+            )
+            headers = _headers(raw_headers)
+            if type(url) is not str or len(url) > 8192 or type(method) is not str:
+                raise EvidenceError("AWS4A_ENDPOINT")
+            headers.setdefault("host", urlsplit(url).netloc)
+            final = FrozenRequest(
+                method, url, None if raw_body is None else _body(raw_body), FrozenHeaders(headers)
+            )
+            body, operation, params = _request_parameters(self._service, self._account, final)
             self._budget.authorize_wire_parameters(self._service, operation, params)
             self._budget.before_send(self._service)
             self._budget.consume_request_bytes(len(body))
-            response = self._transport.send(request)
+            self._signing.verify(final)
+            response = self._transport.send(final)
             self._budget.check()
             if response.status_code == 200:
                 _validate_success(response, self._service, operation, self._budget)

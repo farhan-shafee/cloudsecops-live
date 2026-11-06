@@ -109,6 +109,33 @@ parameters must match the same one-use reservation. Later SDK event handlers can
 substitute another role, account, policy or API. Redirects, arbitrary hosts, bucket
 routes, proxy headers and unsupported bodies reject.
 
+The authorized PR12 P2 correction also binds the final SigV4 signing session. After
+all SDK event handlers, the guard snapshots method, URL, body and bounded unique
+headers into private immutable values. It requires canonical header authentication,
+the exact static BoundSession access key and token, the pinned signing service/region,
+the complete expected SignedHeaders set and a coherent signing date/payload hash.
+S3 Control's pinned model signs as `s3` using ordinary SigV4; S3 uses S3SigV4.
+Anonymous, query-presigned, alternate-algorithm, unsigned-payload and ambiguous-header
+modes are rejected. Session metadata, credential/signer objects and decision bindings
+are checked again at this final boundary.
+
+The pinned SDK's low-level canonical-request, string-to-sign and signature primitives
+recompute the HMAC using the original static credential snapshot and final request
+bytes. The guard never invokes `add_auth` to verify: that method rewrites dates and
+can debug-log signing material. A final budget/session check follows verification.
+Only the frozen copy reaches transport; retained SDK request/header references cannot
+change it. The pinned urllib3 serializer receives its own private header copy.
+
+SigV4 timestamps have whole-second precision. Actual trusted-now session/observation
+and decision validity remain precise; signing timestamps must be within the floored
+issuance/window start, exact end bounds and thirty whole UTC seconds of trusted now
+(less than31seconds physical timestamp age). The independent monotonic execution
+deadline remains at most30seconds, including shutdown; no resource ceiling increases.
+Local request-signature consistency is neither proof of actual session issuance nor
+authentication of AWS-delivered CloudTrail evidence. See the official
+[SigV4 request construction](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html)
+and the [remediation evidence](../PHASE1B_AWS4A_VALIDATION.md).
+
 The shared ceiling charges logical request reservations, actual request bodies and
 plaintext HTTP status/header/chunk-framing/body bytes. Conservative double charging
 is possible; failed calls, pages and retries are not refunded. This is not packet-level

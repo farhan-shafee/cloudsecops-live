@@ -25,6 +25,7 @@ from tests.aws4a_helpers import NOW, decision, policy_document, session
 @pytest.fixture(autouse=True)
 def no_external_transport_or_providers(monkeypatch):
     import boto3
+    import botocore.auth
     import botocore.session
 
     def forbidden(*args, **kwargs):
@@ -41,6 +42,7 @@ def no_external_transport_or_providers(monkeypatch):
     monkeypatch.setattr(botocore.session, "get_session", forbidden)
     monkeypatch.setattr(botocore.session.Session, "get_credentials", forbidden)
     monkeypatch.setattr(boto3, "Session", forbidden)
+    monkeypatch.setattr(botocore.auth, "get_current_datetime", lambda **kwargs: NOW)
     yield
     logging.disable(previous)
     for name, (level, disabled) in levels.items():

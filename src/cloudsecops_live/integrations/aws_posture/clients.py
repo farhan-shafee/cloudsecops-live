@@ -51,6 +51,7 @@ from urllib3.util import Timeout
 from cloudsecops_live.errors import EvidenceError
 from cloudsecops_live.integrations.aws_posture.budget import PostureBudget
 from cloudsecops_live.integrations.aws_posture.contracts import OwnerDecision, PostureClients
+from cloudsecops_live.integrations.aws_posture.signing import FinalSigningBinding
 from cloudsecops_live.integrations.aws_posture.wire import (
     GuardedSession,
     endpoint_for,
@@ -220,7 +221,8 @@ def _install_guards(
 ) -> None:
     client._endpoint.http_session.close()
     adapter = _HTTPSAdapter(certificate_bytes, budget)
-    guarded = GuardedSession(service, decision.expected.account, adapter, budget)
+    signing = FinalSigningBinding(service, client, session, budget)
+    guarded = GuardedSession(service, decision.expected.account, adapter, budget, signing)
     client._endpoint.http_session = guarded
 
     def check(**kwargs: Any) -> None:

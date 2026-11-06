@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import NoReturn
 
 from cloudsecops_live.errors import EvidenceError
@@ -94,6 +94,33 @@ class PostureBudget:
 
     def invalidate(self) -> None:
         self._failed = True
+
+    def check_signing_time(self, instant: datetime) -> None:
+        """Signing time must belong to this current decision and temporary lease."""
+        self.check()
+        try:
+            now = self._clock()
+            self.decision.check(now)
+            self.session.check(now)
+            # SDK signing timestamps have whole-second precision. Actual session
+            # and observation validity is checked at now; an observation made in
+            # this same fractional second must not appear to be in the future.
+            if (
+                type(instant) is not datetime
+                or instant.utcoffset() != timedelta(0)
+                or instant.microsecond != 0
+                or not self.decision.window_start.replace(microsecond=0)
+                <= instant
+                < self.decision.window_end
+                or not self.session.lease.issued_at.replace(microsecond=0)
+                <= instant
+                < self.session.lease.expires_at
+                or not timedelta(0) <= now.replace(microsecond=0) - instant <= timedelta(seconds=30)
+            ):
+                self._reject("AWS4A_SIGNING_TIME")
+        except Exception:
+            self._failed = True
+            raise EvidenceError("AWS4A_SIGNING_TIME") from None
 
     @property
     def remaining_wire_bytes(self) -> int:
