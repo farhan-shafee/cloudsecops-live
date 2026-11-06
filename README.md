@@ -1,5 +1,18 @@
 # CloudSecOps Live
 
+Phase1B-AWS-4B adds an **offline signed CloudTrail verifier** for supplied fixture
+bytes, separate trusted-key bindings and retained acquisition/version observations.
+RSA signature, standard/backfill chain and exact member checks retain
+`authenticated=false`, `trusted_findings=false` and `may_close=false`; they do not
+prove AWS origin or enter the synthetic case workflow. See the
+[supported profile and live limitations](docs/architecture/AWS_SIGNED_OFFLINE_VERIFICATION.md)
+and [independent practical lab](docs/labs/PHASE1B_AWS4B_INTERVIEW_LAB.md).
+This milestone starts from protected main `5394044239e6eecc199722e3a1040b4a8df858eb`,
+tree `5cb28b36730296e44ebe256b3396fda2e4924d22`, the normal PR#12 merge. The AWS4A
+worker remains unconditionally disabled. No AWS, credential, IAM, collection,
+migration, deployment or retained-PostgreSQL operation is enabled. Exact-head
+validation and review results must be recorded after execution; no pass is implied.
+
 Phase1B-AWS-4A adds a **disabled posture network worker and offline-tested guarded
 SDK engine**. Production dispatch always returns `AWS4A_EXECUTION_DISABLED` before
 owner-record lookup, credential delivery or client construction. There is no enabling
@@ -15,7 +28,8 @@ all ten required CI names, existing acceptance gates and migrations001–003. Th
 retains account-level S3 Control inspection without changing IAM; the conflicting
 AWS permission mapping remains a live-preflight blocker. All observations remain
 unauthenticated, with no trusted findings or closure authority. Wazuh and retained
-PostgreSQL remain **NO-GO**; AWS4B/source authentication is outside this milestone.
+PostgreSQL remain **NO-GO**. The AWS4B offline boundary above does not grant source
+authentication or waive a live readiness gate.
 
 Phase1B-AWS-3's [fixed fixture workers](docs/architecture/AWS_FIXED_WORKERS.md) and
 [separate identity/permission contracts](docs/PHASE1B_AWS3_PERMISSION_DIFFERENCES.md)
@@ -109,6 +123,8 @@ The project does not claim production SOC experience, operational incident autho
 
 | Document | Purpose |
 | --- | --- |
+| [AWS4B signed offline verification](docs/architecture/AWS_SIGNED_OFFLINE_VERIFICATION.md) | Exact signature/hash domains, independent key bindings, chain/member/version checks and unproven AWS authenticity |
+| [AWS4B independent practical lab](docs/labs/PHASE1B_AWS4B_INTERVIEW_LAB.md) | No-AI tampering, substituted keys, replay, missing-chain, source-version and false-authority exercises |
 | [AWS4A offline validation](docs/PHASE1B_AWS4A_VALIDATION.md) | Executed unit/branch evidence, adversarial corrections and separate hosted/live gates |
 | [AWS4A posture network architecture](docs/architecture/AWS_POSTURE_NETWORK.md) | Disabled dispatch, pending decision/capability contracts, fixed SDK operations and unresolved live gates |
 | [AWS4A independent practical lab](docs/labs/PHASE1B_AWS4A_INTERVIEW_LAB.md) | No-AI tests of account scope, policy drift, wire bounds, deadlines and false trust claims |
@@ -165,6 +181,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The AWS4A review PR must remain unmerged until separately authorized; no cleanup, live activation or AWS4B work follows automatically.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. AWS4B remains an unmerged offline review milestone; no cleanup, live activation or subsequent milestone follows automatically.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

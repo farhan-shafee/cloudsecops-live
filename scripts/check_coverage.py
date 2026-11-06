@@ -73,6 +73,10 @@ AWS_POSTURE = tuple(
         "network",
     )
 )
+AWS_SIGNED = tuple(
+    f"integrations/aws_cloudtrail/signed/{module}"
+    for module in ("crypto", "parsing", "verification")
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -122,6 +126,7 @@ def main() -> int:
     parser.add_argument("--require-aws2", action="store_true")
     parser.add_argument("--require-aws3", action="store_true")
     parser.add_argument("--require-aws4", action="store_true")
+    parser.add_argument("--require-aws4b", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -177,6 +182,7 @@ def main() -> int:
             (options.require_aws2, AWS_RUNNER),
             (options.require_aws3, AWS_READINESS),
             (options.require_aws4, AWS_POSTURE),
+            (options.require_aws4b, AWS_SIGNED),
         ):
             if not enabled:
                 continue
