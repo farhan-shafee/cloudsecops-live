@@ -1,5 +1,32 @@
 # Delivery roadmap
 
+## Phase1B-AWS-4A: disabled posture network preparation
+
+Protected main starts at `1d9e978946760325a4005f5306a15ac102430a8f`, reviewed tree
+`2633851638ffa22ed5e52c12463a05019c3e8fc8`, the normal PR#10 merge. This milestone
+adds [closed posture contracts, fixed SDK/wire controls and disabled production
+dispatch](architecture/AWS_POSTURE_NETWORK.md), with an
+[independent offline lab](labs/PHASE1B_AWS4A_INTERVIEW_LAB.md). It retains all ten
+CI contexts, native Terraform validation, existing coverage gates and sequential
+disposable-CI PostgreSQL acceptance. Migrations001–003, IAM and Terraform source
+remain unchanged. Actual results belong to exact-head validation/review evidence.
+
+The [owner clarification](https://github.com/farhan-shafee/cloudsecops-live/issues/11#issuecomment-6670869085)
+settles the offline account-level S3 API/action choice without widening permissions.
+The contradictory SAR mapping is still a live-preflight blocker. Eight fixed operation
+types require at least thirteen calls for one policy; empty inventory remains a valid
+count, and final policy/identity rereads do not prove atomic or effective IAM state.
+All production execution remains unavailable: no activator, approved permit, real
+OS broker or live credential custody. Historical CLI-session facts are not reusable.
+
+Publication requires independent review and fresh exact-head ten-check CI; leave one
+PR unmerged. The next separately scoped work must resolve live IAM, real temporary
+issuance/custody, OS egress/containment and current owner approval before any network
+activation. AWS4B source authentication is a separate milestone. No live AWS,
+collection, provisioning, Wazuh or retained-database operation follows automatically.
+The PostgreSQL SIGSEGV, local capacity incident and original ACL timeout/successful
+retry remain unresolved limitations, not fixes delivered by this offline work.
+
 ## Phase1B-AWS-3: fixed workers and least-privilege identity readiness
 
 PR#9 was normally merged as `58d008c4744c7f2f7560bddc6fcdc19516ef6298`, preserving

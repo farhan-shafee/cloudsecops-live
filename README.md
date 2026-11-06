@@ -1,18 +1,27 @@
 # CloudSecOps Live
 
-Phase1B-AWS-3 adds **fixed offline workers and separate identity contracts** for
-metadata inspection, archive collection and fixture consistency verification. Requests
-cannot select executable code or deliver credentials. Explicit temporary-session,
-RoleId/MFA observation and substitution checks remain unverified observations; no live
-AWS client or source-authentication path is enabled. See [worker architecture](docs/architecture/AWS_FIXED_WORKERS.md),
-[permission differences](docs/PHASE1B_AWS3_PERMISSION_DIFFERENCES.md) and the
-[no-AI lab](docs/labs/PHASE1B_AWS3_INTERVIEW_LAB.md).
+Phase1B-AWS-4A adds a **disabled posture network worker and offline-tested guarded
+SDK engine**. Production dispatch always returns `AWS4A_EXECUTION_DISABLED` before
+owner-record lookup, credential delivery or client construction. There is no enabling
+flag, operator command or real credential broker. Fictional sessions, fake transports
+and numeric-loopback faults exercise the internal controls; they do not demonstrate
+live AWS acceptance or credential custody. See the [posture architecture](docs/architecture/AWS_POSTURE_NETWORK.md)
+and [no-AI lab](docs/labs/PHASE1B_AWS4A_INTERVIEW_LAB.md).
 
-This milestone starts from protected main `58d008c4744c7f2f7560bddc6fcdc19516ef6298`,
-tree `2d1d8c37a2a9a1094f74b17046ffcdb5e7fcc0cc`, the normal PR#9 merge. All ten
-required CI names and previous acceptance gates remain. The dated owner audit is
-private input, not current effective IAM or demonstrated session issuance. Inspection
-never gains S3 evidence-object access. Wazuh and retained PostgreSQL remain NO-GO.
+This milestone starts from protected main `1d9e978946760325a4005f5306a15ac102430a8f`,
+tree `2633851638ffa22ed5e52c12463a05019c3e8fc8`, the normal PR#10 merge. It preserves
+all ten required CI names, existing acceptance gates and migrations001–003. The
+[owner clarification](https://github.com/farhan-shafee/cloudsecops-live/issues/11#issuecomment-6670869085)
+retains account-level S3 Control inspection without changing IAM; the conflicting
+AWS permission mapping remains a live-preflight blocker. All observations remain
+unauthenticated, with no trusted findings or closure authority. Wazuh and retained
+PostgreSQL remain **NO-GO**; AWS4B/source authentication is outside this milestone.
+
+Phase1B-AWS-3's [fixed fixture workers](docs/architecture/AWS_FIXED_WORKERS.md) and
+[separate identity/permission contracts](docs/PHASE1B_AWS3_PERMISSION_DIFFERENCES.md)
+remain unchanged. Inspection never gains S3 evidence-object access. Dated private
+audit and ended CLI-session receipts are historical observations, not reusable
+credentials, current effective IAM or permission for another run.
 
 Phase1B-AWS-2 adds offline **process-isolated runner preparation**: a monotonic parent watchdog, owned-tree cleanup, explicit temporary-identity contracts, aggregate read-only SDK budgets and disabled AWS CLI2.37.11 preflight. It exposes no live command or credential/AWS access. See [runner architecture](docs/architecture/AWS_SECURE_RUNNER.md), [implementation plan](docs/PHASE1B_AWS2_PLAN.md) and [no-AI lab](docs/labs/PHASE1B_AWS2_INTERVIEW_LAB.md). Every prepared receipt remains unauthenticated; live assembly and signed-source authentication require separate gates.
 
@@ -100,6 +109,10 @@ The project does not claim production SOC experience, operational incident autho
 
 | Document | Purpose |
 | --- | --- |
+| [AWS4A offline validation](docs/PHASE1B_AWS4A_VALIDATION.md) | Executed unit/branch evidence, adversarial corrections and separate hosted/live gates |
+| [AWS4A posture network architecture](docs/architecture/AWS_POSTURE_NETWORK.md) | Disabled dispatch, pending decision/capability contracts, fixed SDK operations and unresolved live gates |
+| [AWS4A independent practical lab](docs/labs/PHASE1B_AWS4A_INTERVIEW_LAB.md) | No-AI tests of account scope, policy drift, wire bounds, deadlines and false trust claims |
+| [AWS live-readiness decisions](docs/AWS_LIVE_READINESS.md) | Separate future execution approvals, credential custody, effective IAM and source-authentication gates |
 | [AWS3 offline validation](docs/PHASE1B_AWS3_VALIDATION.md) | Executed local tests, branch gates, review corrections and unverified live boundaries |
 | [Test-harness safety](docs/PHASE1B_OPS1_SAFETY.md) | Disposable-CI capacity, private creation provenance, quarantine and retained-data preservation |
 | [Test-harness governance](docs/TEST_HARNESS_GOVERNANCE.md) | Observed branch-protection gaps and the separately authorized owner protection plan |
@@ -152,6 +165,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. This AWS3 PR remains unmerged; no cleanup or live exercise follows automatically.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. The AWS4A review PR must remain unmerged until separately authorized; no cleanup, live activation or AWS4B work follows automatically.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.

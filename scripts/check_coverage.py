@@ -57,6 +57,22 @@ AWS_READINESS = (
     "integrations/aws_readiness/transport",
     "integrations/aws_readiness/workers",
 )
+AWS_POSTURE = tuple(
+    f"integrations/aws_posture/{module}"
+    for module in (
+        "requests",
+        "contracts",
+        "capability",
+        "budget",
+        "engine",
+        "clients",
+        "signing",
+        "wire",
+        "registry",
+        "bootstrap",
+        "network",
+    )
+)
 
 
 def module_summary(files: dict[str, Any], module: str) -> dict[str, int]:
@@ -105,6 +121,7 @@ def main() -> int:
     parser.add_argument("--require-aws1", action="store_true")
     parser.add_argument("--require-aws2", action="store_true")
     parser.add_argument("--require-aws3", action="store_true")
+    parser.add_argument("--require-aws4", action="store_true")
     options = parser.parse_args()
     try:
         report = json.loads(options.report.read_text(encoding="utf-8"))
@@ -159,6 +176,7 @@ def main() -> int:
             (options.require_aws1, AWS_GUARDED),
             (options.require_aws2, AWS_RUNNER),
             (options.require_aws3, AWS_READINESS),
+            (options.require_aws4, AWS_POSTURE),
         ):
             if not enabled:
                 continue
@@ -169,6 +187,15 @@ def main() -> int:
                 _, branches = percentages([summary])
                 print(f"{module}.py: branch {branches:.2f}% (required >=85%)")
                 passed &= branches >= 85
+        if options.require_aws4:
+            # The disabled worker has unconditional validation + rejection. Do not
+            # invent a branch or count missing branch data as a passing percentage.
+            summary = module_summary(files, "integrations/aws_posture/worker")
+            if summary["num_branches"] != 0 or summary["covered_lines"] <= 0:
+                raise ValueError("unconditional denial worker measurement changed")
+            worker_lines, _ = percentages([summary])
+            print(f"aws_posture/worker.py: lines {worker_lines:.2f}% (required 100%; no branches)")
+            passed &= worker_lines == 100
         if options.require_aws2:
             for module in AWS_RUNNER_PLATFORM:
                 summary = module_summary(files, module)

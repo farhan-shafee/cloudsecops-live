@@ -180,6 +180,26 @@ def run_isolated(
     cancel: threading.Event | None = None,
     max_response_bytes: int = MAX_RESPONSE_BYTES,
 ) -> IsolatedResult:
+    """Original fixture entrypoint, retaining its fixed offline bootstrap."""
+    return _run_with_bootstrap(
+        entrypoint,
+        request,
+        timeout=timeout,
+        cancel=cancel,
+        max_response_bytes=max_response_bytes,
+        bootstrap_name="fixture",
+    )
+
+
+def _run_with_bootstrap(
+    entrypoint: WorkerRef,
+    request: bytes,
+    *,
+    timeout: float = 5.0,
+    cancel: threading.Event | None = None,
+    max_response_bytes: int = MAX_RESPONSE_BYTES,
+    bootstrap_name: str,
+) -> IsolatedResult:
     """Run fixed trusted Python code with bounded JSON IPC and owned cleanup.
 
     The timeout includes startup and a reserved shutdown interval. Failure to
@@ -201,10 +221,18 @@ def run_isolated(
         or re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*", entrypoint.module) is None
         or re.fullmatch(r"[A-Za-z_]\w*", entrypoint.function) is None
         or sys.platform not in ("win32", "linux")
+        or type(bootstrap_name) is not str
+        or bootstrap_name not in {"fixture", "posture"}
     ):
         raise EvidenceError("AWS_RUNNER_CONFIG")
     deadline = started + timeout
     work_cutoff = deadline - min(0.5, timeout * 0.25)
+    bootstrap = (
+        Path(__file__).with_name("bootstrap.py")
+        if bootstrap_name == "fixture"
+        else Path(__file__).parents[1] / "aws_posture" / "bootstrap.py"
+    )
+    reasons = _REASONS if bootstrap_name == "fixture" else _REASONS | {"AWS4A_EXECUTION_DISABLED"}
     try:
         parsed = _json(request)
         # Explicit installed-package paths are data, not site/.pth execution.
@@ -254,7 +282,7 @@ def run_isolated(
         reason, response, cleaned = "AWS_RUNNER_WORKER_FAILED", None, False
         try:
             process = subprocess.Popen(
-                [sys.executable, "-I", "-S", str(Path(__file__).with_name("bootstrap.py"))],
+                [sys.executable, "-I", "-S", str(bootstrap)],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
@@ -318,7 +346,7 @@ def run_isolated(
                         elif (
                             envelope.get("status") == "failed"
                             and set(envelope) == {"status", "reason"}
-                            and envelope.get("reason") in _REASONS
+                            and envelope.get("reason") in reasons
                         ):
                             reason = str(envelope["reason"])
                         else:

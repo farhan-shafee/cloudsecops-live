@@ -1,5 +1,14 @@
 # Interview mastery and practical assessment
 
+Phase1B-AWS-4A adds the [disabled posture network practical lab](labs/PHASE1B_AWS4A_INTERVIEW_LAB.md):
+pending decision authority, one-use fictional capabilities, exact account S3 Control
+scope, policy/identity drift, valid empty inventory versus denial, final serialized
+request binding, bounded raw framing and independent deadlines. Complete the fault
+injection and independently authored test without AI, AWS or retained PostgreSQL.
+Explain the unresolved SAR permission mapping and real credential-broker/OS/live-IAM
+gates rather than inventing a working live runner. Human assessment remains **NOT_RUN**;
+fake SDK tests neither authenticate evidence nor award production experience.
+
 Phase1B-AWS-3 adds the [fixed-worker and least-privilege lab](labs/PHASE1B_AWS3_INTERVIEW_LAB.md):
 immutable RoleId/session bindings, explicit MFA observations, fixed dispatch, S3
 metadata versus object authority, credential substitution and static/effective IAM

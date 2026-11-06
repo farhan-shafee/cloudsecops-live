@@ -1,5 +1,24 @@
 # System design
 
+Phase1B-AWS-4A adds a separate [disabled posture network worker](AWS_POSTURE_NETWORK.md)
+and guarded SDK engine. The closed public request cannot carry credentials, paths,
+operations or approval flags; the child always rejects before decision lookup or client
+construction. Internal fictional-session tests exercise exact account/RoleId/policy
+bindings, eight fixed operation types, aggregate budgets, preparse HTTP framing bounds
+and final serialized request binding under the independent parent watchdog. With one
+policy, the happy-path fake inspection uses thirteen calls including final identity
+and policy rereads. Empty inventories remain valid counts; all account BPA values must
+be exactly true. Neither constitutes effective-IAM or source-authentication proof.
+
+The [owner decision](https://github.com/farhan-shafee/cloudsecops-live/issues/11#issuecomment-6670869085)
+retains account S3 Control `GetPublicAccessBlock`, `s3:GetAccountPublicAccessBlock` and
+exact `s3:ResourceAccount` scope without changing IAM. The contradictory SAR mapping
+is unresolved for live preflight. No activator, real OS broker, credential custody,
+AWS4B signed-source validation or database workflow bridge is supplied. Real egress,
+OS containment and live IAM need separate review/authorization. Historical CLI-session
+facts cannot be reused; PostgreSQL and Wazuh remain NO-GO. See the
+[owner readiness packet](../AWS_LIVE_READINESS.md).
+
 Phase1B-AWS-2 adds the [offline secure runner boundary](AWS_SECURE_RUNNER.md) for future trusted readiness workers. Native containment and a parent watchdog handle blocked network phases; identity, aggregate budget and CLI preflight contracts grant no AWS access or evidence trust. Existing ingestion, workflow and SQL authority are unchanged. Live assembly, signed authentication and capacity remain separately gated.
 
 Phase1B-AWS-1 adds a separate `integrations/aws_sdk` implementation of the offline
