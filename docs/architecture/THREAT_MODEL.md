@@ -1,5 +1,35 @@
 # Threat model
 
+## Supplied signed-evidence boundary: Phase1B-AWS-4B
+
+The [offline verifier](AWS_SIGNED_OFFLINE_VERIFICATION.md) separates supplied public-key
+authority from hostile digest/log input. It verifies original byte domains, RSA
+PKCS#1v1.5/SHA-256, exact key/Region/validity bindings, standard/backfill links and
+signed bucket/key/content membership before accepting local consistency. Retained
+archive hashes and acquisition/version observations are checked separately: neither
+VersionId nor compressed gzip bytes are signed member fields. Unknown format,
+substitution, conflicting evidence, missing links, unexpected restarts and ambiguous
+versions fail closed. Bounded object/bundle sizes and existing strict parsing contain
+hostile gzip/JSON; complete-record conflicts cannot disappear through normalization.
+
+Expected interval and terminal/head pins resist old-valid-chain replay only within
+the trusted supplied scope. Complete inventory is an assumption, not a fact discovered
+offline; omitted backfills cannot prove their absence. Backfill generation metadata
+affects key-time selection but is not itself separately authenticated. A forged
+trusted-key input or compromised key/acquisition custody defeats the input trust
+assumption; no fixture may establish its own key authority. CLI exit0, ETag, signature
+success or an analyst note cannot grant source authenticity, findings or closure.
+Every result retains `authenticated=false`, `trusted_findings=false`, `may_close=false`.
+
+No network, CLI execution, database intake or live authenticator is added. Genuine
+AWS-origin acceptance needs separately approved acquisition, key custody, current
+signature metadata, complete chain inventory, exact original-source/version continuity
+and supported CLI2.37.11 parity/exact membership. Digest delivery intervals are not
+event-time visibility or absence-of-compromise claims. AWS4A remains disabled with
+its corrected final SigV4 boundary unchanged. Historical P2 evidence, PostgreSQL
+SIGSEGV and ACL timeout/separate retry remain preserved; local PostgreSQL and Wazuh
+remain NO-GO. See the [practical lab](../labs/PHASE1B_AWS4B_INTERVIEW_LAB.md).
+
 ## Disabled posture network boundary: Phase1B-AWS-4A
 
 The [posture design](AWS_POSTURE_NETWORK.md) treats request and owner-reference
@@ -24,7 +54,8 @@ keeps account S3 Control, `s3:GetAccountPublicAccessBlock` and exact
 The contradictory upstream SAR mapping is an unresolved live gate. Any denial,
 unknown/false BPA field, expired session, budget/deadline failure or uncertain cleanup
 invalidates the result. No observation grants AWS authenticity, trusted findings,
-recommendation approval or closure. AWS4B is separate future work.
+recommendation approval or closure. The AWS4B offline checks above do not grant
+genuine AWS-source authentication or live execution authority.
 
 The independent parent watchdog bounds blocked network phases and owned-tree cleanup.
 Python egress/process guards cannot contain arbitrary native/same-user code and are

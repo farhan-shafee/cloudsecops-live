@@ -1,5 +1,32 @@
 # Delivery roadmap
 
+## Phase1B-AWS-4B: supplied signed evidence, offline only
+
+Start from normal PR#12 merge `5394044239e6eecc199722e3a1040b4a8df858eb`, tree
+`5cb28b36730296e44ebe256b3396fda2e4924d22`. The
+[offline signed-verification boundary](architecture/AWS_SIGNED_OFFLINE_VERIFICATION.md)
+checks RSA signatures against independent key inputs, separate standard/backfill
+chains, exact bucket/key/content membership and retained version observations.
+The [independent lab](labs/PHASE1B_AWS4B_INTERVIEW_LAB.md) tests tampering, replay,
+substituted keys, missing chains and unjustified authority claims. Results always
+retain `authenticated=false`, `trusted_findings=false` and `may_close=false`.
+
+Supplied complete inventory and key/acquisition provenance remain unproven assumptions.
+VersionId is not signed by CloudTrail; a valid supplied chain does not establish
+fresh source acquisition, absent backfills, absence of compromise or effective IAM.
+AWS CLI2.37.11 remains a pinned reference/receipt contract, not an executed live
+validator. All ten protected checks, native Terraform, earlier coverage gates and
+sequential disposable hosted PostgreSQL acceptance remain mandatory. Record actual
+outcomes against the final commit; neither a workflow nor this roadmap declares a pass.
+
+Publish one unmerged PR, then stop. The next live-source acceptance requires separate
+owner authorization, genuine key custody, current signature metadata, complete stable
+chain inventory, exact source versions with before/after continuity and supported CLI
+parity/exact membership. No production worker activation, credential issuance, AWS
+request, IAM change, migration, provisioning or deployment is included. Wazuh and
+retained local PostgreSQL remain NO-GO; the historical P2, native SIGSEGV and original
+ACL timeout/separate successful retry remain preserved, not repaired by fixture tests.
+
 ## Phase1B-AWS-4A: disabled posture network preparation
 
 Protected main starts at `1d9e978946760325a4005f5306a15ac102430a8f`, reviewed tree
@@ -22,7 +49,8 @@ OS broker or live credential custody. Historical CLI-session facts are not reusa
 Publication requires independent review and fresh exact-head ten-check CI; leave one
 PR unmerged. The next separately scoped work must resolve live IAM, real temporary
 issuance/custody, OS egress/containment and current owner approval before any network
-activation. AWS4B source authentication is a separate milestone. No live AWS,
+activation. AWS4B's supplied signed-evidence checks above remain offline; genuine
+source authentication is still a separate acceptance boundary. No live AWS,
 collection, provisioning, Wazuh or retained-database operation follows automatically.
 The PostgreSQL SIGSEGV, local capacity incident and original ACL timeout/successful
 retry remain unresolved limitations, not fixes delivered by this offline work.
