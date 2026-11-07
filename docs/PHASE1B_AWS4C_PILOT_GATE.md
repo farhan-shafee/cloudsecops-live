@@ -34,6 +34,10 @@ These observations do not authorize provisioning.
 
 `python scripts/check_aws4c_pilot.py PATH_TO_PRIVATE_MANIFEST.json`
 
+The equivalent module invocation is `python -m scripts.check_aws4c_pilot
+PATH_TO_PRIVATE_MANIFEST.json`. Both real subprocess startup paths have offline
+regression tests; either returns exit code `1` when required approvals are absent.
+
 The script reads at most 16KiB of bounded JSON, rejects duplicate keys,
 nonfinite numbers, symlinks, unsupported keys and a changed reviewed
 infrastructure source. It prints generic blockers without echoing account

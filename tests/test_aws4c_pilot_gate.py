@@ -1,6 +1,8 @@
 """Offline AWS4C owner decision contract: fail-closed without touching AWS."""
 
 import json
+import subprocess
+import sys
 from copy import deepcopy
 from pathlib import Path
 
@@ -253,3 +255,33 @@ def test_bad_manifest_fails_cli_without_echoing_content(tmp_path: Path, capsys) 
 def test_usage_needs_one_explicit_manifest() -> None:
     assert main([]) == 2
     assert main(["one", "two"]) == 2
+
+
+@pytest.mark.parametrize("invocation", ("file", "module"))
+def test_actual_cli_entrypoints_fail_closed_on_private_manifest(
+    valid_manifest: dict, tmp_path: Path, invocation: str
+) -> None:
+    """Exercise the real CLI startup path rather than only imported main()."""
+    manifest = deepcopy(valid_manifest)
+    manifest["cost_and_retention"]["funding_owner_approved"] = False
+    private = tmp_path / "pilot-private.json"
+    private.write_text(json.dumps(manifest), encoding="utf-8")
+    root = Path(__file__).resolve().parents[1]
+    entrypoint = (
+        [str(root / "scripts" / "check_aws4c_pilot.py")]
+        if invocation == "file"
+        else ["-m", "scripts.check_aws4c_pilot"]
+    )
+    completed = subprocess.run(
+        [sys.executable, *entrypoint, str(private)],
+        capture_output=True,
+        text=True,
+        cwd=root,
+        timeout=12,
+        check=False,
+    )
+    assert completed.returncode == 1, completed.stderr
+    assert "funding_owner_approved" in completed.stdout
+    assert "live provisioning not authorized" in completed.stdout
+    assert "Traceback" not in completed.stderr
+    assert manifest["account_id"] not in completed.stdout

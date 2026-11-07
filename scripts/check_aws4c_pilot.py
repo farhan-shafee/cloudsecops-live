@@ -10,7 +10,11 @@ import re
 import sys
 from pathlib import Path
 
-from scripts.check_terraform import SOURCE, check_directory
+if __package__:
+    from scripts.check_terraform import SOURCE, check_directory
+else:
+    # Support running this exact offline checker directly by file path.
+    from check_terraform import SOURCE, check_directory
 
 SCHEMA = "cloudsecops.aws4c.pilot-gates/1"
 BASE_COMMIT = (
