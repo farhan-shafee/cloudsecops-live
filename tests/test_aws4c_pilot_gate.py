@@ -285,3 +285,38 @@ def test_actual_cli_entrypoints_fail_closed_on_private_manifest(
     assert "live provisioning not authorized" in completed.stdout
     assert "Traceback" not in completed.stderr
     assert manifest["account_id"] not in completed.stdout
+
+
+@pytest.mark.parametrize(
+    "exception_type",
+    (OSError, PermissionError, ValueError, RecursionError),
+)
+def test_private_manifest_exception_never_leaks_exception_text(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    exception_type: type[Exception],
+) -> None:
+    """OS error text can contain private directory names or account IDs."""
+    canary = "SENSITIVE_MANIFEST_LOCATION_NEVER_PRINT"
+
+    def fail_read(_: Path) -> dict:
+        raise exception_type("Access denied to " + canary)
+
+    monkeypatch.setattr("scripts.check_aws4c_pilot.read_private_manifest", fail_read)
+    assert main(["ignored-private-manifest.json"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == (
+        "AWS4C offline gate BLOCKED: private manifest unavailable or invalid"
+    )
+    assert canary not in captured.err
+
+
+def test_nonexistent_private_manifest_path_not_echoed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hidden = tmp_path / "DO_NOT_PRINT_PRIVATE_DIRECTORY" / "secret-manifest.json"
+    assert main([str(hidden)]) == 1
+    text = capsys.readouterr()
+    assert "DO_NOT_PRINT_PRIVATE_DIRECTORY" not in text.err + text.out
+    assert "private manifest unavailable or invalid" in text.err

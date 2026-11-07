@@ -38,6 +38,14 @@ The equivalent module invocation is `python -m scripts.check_aws4c_pilot
 PATH_TO_PRIVATE_MANIFEST.json`. Both real subprocess startup paths have offline
 regression tests; either returns exit code `1` when required approvals are absent.
 
+Operator note (Chopin, 2026-11-07): a Windows virtual-environment Python launcher
+used through a PowerShell output pipeline intermittently stalled, despite the
+checker passing direct unit, import, and real subprocess tests. An independently
+installed Python 3.14 executable ran the actual private manifest directly and
+returned 27 missing-approval findings promptly. A hung or timed-out process must
+be treated as **BLOCKED**, not success. An unattended caller needs its own external
+process watchdog; the checker must not add AWS network or credential discovery.
+
 The script reads at most 16KiB of bounded JSON, rejects duplicate keys,
 nonfinite numbers, symlinks, unsupported keys and a changed reviewed
 infrastructure source. It prints generic blockers without echoing account

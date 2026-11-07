@@ -286,9 +286,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         issues = check_manifest(read_private_manifest(Path(args[0])))
-    except (OSError, ValueError, RecursionError) as exc:
-        # The exception's message is local and sanitized; it contains no user values.
-        print("AWS4C offline gate BLOCKED: " + str(exc), file=sys.stderr)
+    except (OSError, ValueError, RecursionError):
+        # Filesystem error messages may embed the private path or account name.
+        # Do not print exception details, even for an unrecognized OS error.
+        print(
+            "AWS4C offline gate BLOCKED: private manifest unavailable or invalid", file=sys.stderr
+        )
         return 1
     for issue in issues:
         print("AWS4C offline gate BLOCKED: " + issue)
