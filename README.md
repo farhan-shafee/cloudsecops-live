@@ -1,6 +1,8 @@
 # CloudSecOps Live
 
-Phase1B-AWS-4B adds an **offline signed CloudTrail verifier** for supplied fixture
+**Current source checkpoint (November 21, 2026):** The [AWS-4C Gate B offline decision checker](docs/PHASE1B_AWS4C_PILOT_GATE.md) was merged in [PR #15](https://github.com/farhan-shafee/cloudsecops-live/pull/15) as `3473b0a`. It adds a bounded private-manifest checker, regression tests, and owner-decision instructions. **No AWS resource was provisioned and no live authorization was granted.** Five separate MFA-backed operator roles, secured remote Terraform state, funding/retention, independent egress/key provenance, and explicit owner approvals remain unresolved. [Issue #14](https://github.com/farhan-shafee/cloudsecops-live/issues/14) tracks the remaining live NO-GO decisions; merging an offline gate does not waive them.
+
+**Historical AWS-4B checkpoint:** Phase1B-AWS-4B adds an **offline signed CloudTrail verifier** for supplied fixture
 bytes, separate trusted-key bindings and retained acquisition/version observations.
 RSA signature, standard/backfill chain and exact member checks retain
 `authenticated=false`, `trusted_findings=false` and `may_close=false`; they do not
@@ -10,8 +12,7 @@ and [independent practical lab](docs/labs/PHASE1B_AWS4B_INTERVIEW_LAB.md).
 This milestone starts from protected main `5394044239e6eecc199722e3a1040b4a8df858eb`,
 tree `5cb28b36730296e44ebe256b3396fda2e4924d22`, the normal PR#12 merge. The AWS4A
 worker remains unconditionally disabled. No AWS, credential, IAM, collection,
-migration, deployment or retained-PostgreSQL operation is enabled. Exact-head
-validation and review results must be recorded after execution; no pass is implied.
+migration, deployment or retained-PostgreSQL operation is enabled. Its original source and CI history belong to that earlier review; neither AWS4B nor AWS4C supplies live AWS authentication or deployment authority.
 
 Phase1B-AWS-4A adds a **disabled posture network worker and offline-tested guarded
 SDK engine**. Production dispatch always returns `AWS4A_EXECUTION_DISABLED` before
@@ -181,6 +182,6 @@ Normal ingestion uses the private collector configuration; worker, delivery and 
 
 ## Next boundary
 
-The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. AWS4B remains an unmerged offline review milestone; no cleanup, live activation or subsequent milestone follows automatically.
+The synthetic no-action workflow remains separate from offline AWS preparation. A verified synthetic receipt is not AWS source authentication, benign-intent proof or incident validation; exercise closure is not containment or remediation. Any future local acceptance recovery or bounded read-only AWS inspection requires separate owner authorization, identity/capacity review and the applicable live-runner gates. Live source authentication, Wazuh, cloud response, public deployment and AI remain unimplemented. Two accounts operated by one person do not establish independent authority. AWS4B and AWS4C offline-source changes are merged, but no live AWS provisioning, cleanup, production pilot or further milestone is authorized by those merges.
 
 Do not commit real cloud evidence, account identifiers, private names, credentials, tokens, Terraform state/plans or unsanitized screenshots. Public fixtures use named synthetic placeholders. Budgets and billing alerts are not spending caps; no cloud expenditure is authorized by this subphase.
